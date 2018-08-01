@@ -54,7 +54,7 @@ static void stepRightIfDual(tree *, int *, stack *);
 
 static void stepRightUntilCanStepLeft(tree *, int *, int *, treeNode **);
 
-static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *,stack *, int *);
+static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *, stack *, int *);
 
 void stepToLowestInternal(tree *);
 

@@ -7,11 +7,11 @@ static const START_SIZE = 4;
 
 typedef struct stack
 {
-    void *stackBase;
-    void *stackP;
-    void *temp;
-    int allocated;
-    unsigned dataSize;
+	void *stackBase;
+	void *stackP;
+	void *temp;
+	int allocated;
+	unsigned dataSize;
 } stack;
 
 stack newStack(int);

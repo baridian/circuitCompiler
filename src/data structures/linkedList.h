@@ -7,14 +7,14 @@ typedef struct linkedListNode linkedListNode;
 
 struct linkedListNode
 {
-    linkedListNode *next;
-    void *data;
+	linkedListNode *next;
+	void *data;
 };
 
 typedef struct linkedList
 {
-    linkedListNode *head;
-    unsigned dataSize;
+	linkedListNode *head;
+	unsigned dataSize;
 } linkedList;
 
 int llLength(linkedList);
@@ -23,7 +23,7 @@ static void negativeIndexWrap(linkedList, int *);
 
 void llInsert(linkedList *, int, void *);
 
-void llErase(linkedList *,int);
+void llErase(linkedList *, int);
 
 void *llread(linkedList, int);
 
@@ -31,11 +31,11 @@ void llAppend(linkedList *, void *);
 
 void llInsertList(linkedList *, int, linkedList);
 
-static int memcmpr(void *,void *, int);
+static int memcmpr(void *, void *, int);
 
 int llMatch(linkedList, linkedList);
 
-linkedList arrayToll(void *,int , int );
+linkedList arrayToll(void *, int, int);
 
 static void freeHelper(linkedListNode *);
 

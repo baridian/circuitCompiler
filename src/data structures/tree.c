@@ -211,7 +211,7 @@ static void stepRightUntilCanStepLeft(tree *t, int *level, int *deepest, treeNod
 	}
 }
 
-static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t,stack *path, int *level)
+static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t, stack *path, int *level)
 {
 	if (currentNodeType(*t) == leaf && !isRoot(*t))
 	{
@@ -222,10 +222,10 @@ static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t,stack *path, int 
 			if (currentNodeType(*t) == dualInternal)
 				spop(path);
 		}
-		if(stackSize(*path) > 0)
+		if (stackSize(*path) > 0)
 		{
 			(*level)++;
-			step(t,right);
+			step(t, right);
 		}
 	}
 }
@@ -239,15 +239,15 @@ void stepToLowestInternal(tree *t)
 	t->current = t->root;
 	do
 	{
-		stepLeftWhilePossible(t,&current,&deepest,&deepestNode,&path);
+		stepLeftWhilePossible(t, &current, &deepest, &deepestNode, &path);
 
-		stepUpToFirstDual(t,path,&current);
+		stepUpToFirstDual(t, path, &current);
 
-		stepRightIfDual(t,&current,&path);
+		stepRightIfDual(t, &current, &path);
 
-		stepRightUntilCanStepLeft(t,&current,&deepest,&deepestNode);
+		stepRightUntilCanStepLeft(t, &current, &deepest, &deepestNode);
 
-		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t,&path,&current);
+		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t, &path, &current);
 	} while (stackSize(path) != 0);
 	t->current = deepestNode;
 }
