@@ -17,6 +17,17 @@ stack newStack(int dataSize)
     return toReturn;
 }
 
+static void rescaleStack(stack *s)
+{
+    int stackSize = ((int)s->stackP - (int)s->stackBase) / s->dataSize;
+    if((float)stackSize < (float)s->allocated * 0.35 && s->allocated > 4)
+        s->allocated /= 2;
+    else if((float)stackSize > (float)s->allocated * 0.7)
+        s->allocated *= 2;
+    s->stackBase = realloc(s->stackBase,s->allocated * s->dataSize);
+    s->stackP = (char *)s->stackBase + stackSize * s->dataSize;
+}
+
 void *spop(stack *s)
 {
     if(s->stackBase == s->stackP)
@@ -25,12 +36,26 @@ void *spop(stack *s)
     {
         s->stackP = (char *)s->stackP - s->dataSize;
         memcpy(s->temp,s->stackP,s->dataSize);
-
+        rescaleStack(s);
     }
+    return s->temp;
 }
 
-void spush(void *, stack);
+void spush(void *data, stack *s)
+{
+    memcpy(s->stackP,data,s->dataSize);
+    s->stackP = (char *)s->stackP + s->dataSize;
+    rescaleStack(s);
+}
 
-void *speek(stack);
+void *speek(stack s)
+{
+    memcpy(s.temp,s.stackP,s.dataSize);
+    return s.temp;
+}
 
-void frees(stack);
+void frees(stack s)
+{
+    free(s.stackBase);
+    free(s.temp);
+}

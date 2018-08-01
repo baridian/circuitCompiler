@@ -20,9 +20,11 @@ typedef struct stack
 
 stack newStack(int);
 
-void *spop(stack);
+static void rescaleStack(stack *);
 
-void spush(void *, stack);
+void *spop(stack *);
+
+void spush(void *, stack *);
 
 void *speek(stack);
 
