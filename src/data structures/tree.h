@@ -16,7 +16,7 @@ struct treeNode
 typedef struct tree
 {
     treeNode *root;
-    int dataSize;
+    unsigned dataSize;
     treeNode *current;
 } tree;
 
@@ -32,4 +32,6 @@ void splice(tree,treeDir,tree);
 
 void trim(tree,treeDir);
 
-void stepToLowest(tree *);
+void stepToLowestInternal(tree *);
+
+void freeTree(tree);
