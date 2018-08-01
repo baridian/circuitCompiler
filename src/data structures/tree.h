@@ -7,30 +7,40 @@ typedef struct treeNode treeNode;
 
 struct treeNode
 {
-    treeNode *left;
-    treeNode *right;
-    treeNode *parent;
-    void *data;
+	treeNode *left;
+	treeNode *right;
+	treeNode *parent;
+	void *data;
 };
 
 typedef struct tree
 {
-    treeNode *root;
-    unsigned dataSize;
-    treeNode *current;
+	treeNode *root;
+	unsigned dataSize;
+	treeNode *current;
 } tree;
 
-typedef enum treeDir{left, right, up} treeDir;
+typedef enum treeDir
+{
+	left, right, up
+} treeDir;
+
+typedef enum treeNodeType
+{
+	root, dualInternal, leftInternal, rightInternal, leaf
+} treeNodeType;
 
 tree newTree(int);
 
-void addNode(tree,treeDir,void *);
+void addNode(tree, treeDir, void *);
 
-void step(tree *,treeDir);
+void step(tree *, treeDir);
 
-void splice(tree,treeDir,tree);
+void splice(tree, treeDir, tree);
 
-void trim(tree *,treeDir);
+void trim(tree *, treeDir);
+
+treeNodeType currentNodeType(tree);
 
 void stepToLowestInternal(tree *);
 

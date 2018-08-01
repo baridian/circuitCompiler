@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "tree.h"
+#include "stack.h"
+
 /*TODO: add in fix for null root */
 
 tree newTree(int dataSize)
@@ -134,7 +136,30 @@ void trim(tree *t, treeDir dir)
 	freeTree(toFree);
 }
 
+treeNodeType currentNodeType(tree t)
+{
+	if(t.current->parent == NULL)
+		return root;
+	else if(t.current->left == NULL && t.current->right == NULL)
+		return leaf;
+	else if(t.current->left == NULL)
+		return rightInternal;
+	else if(t.current->right == NULL)
+		return leftInternal;
+	else
+		return dualInternal;
+}
+
 void stepToLowestInternal(tree *t) /* TODO: this function */
 {
-
+	stack path = newStack(sizeof(treeDir));
+	treeDir type;
+	int deepest = 0;
+	while(currentNodeType(*t) != leaf && currentNodeType(*t) != rightInternal)
+	{
+		type = left;
+		step(t, type);
+		spush(&type, &path);
+		deepest++;
+	}
 }
