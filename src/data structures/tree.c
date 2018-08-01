@@ -66,25 +66,25 @@ void addNode(tree t, treeDir dir, void *data)
 
 void step(tree *t, treeDir dir)
 {
-	switch(dir)
+	switch (dir)
 	{
 		case up:
-			if(t->current->parent != NULL)
+			if (t->current->parent != NULL)
 				t->current = t->current->parent;
 		case left:
-			if(t->current->left != NULL)
+			if (t->current->left != NULL)
 				t->current = t->current->left;
 		case right:
-			if(t->current->right != NULL)
+			if (t->current->right != NULL)
 				t->current = t->current->right;
 	}
 }
 
 void splice(tree t, treeDir dir, tree splicingOn)
 {
-	if(dir == left && t.current->left == NULL)
+	if (dir == left && t.current->left == NULL)
 		t.current->left = splicingOn.root;
-	if(dir == right && t.current->right == NULL)
+	if (dir == right && t.current->right == NULL)
 		t.current->right = splicingOn.root;
 }
 
@@ -95,12 +95,12 @@ void resetToRoot(tree *t)
 
 void freeTree(tree t)
 {
-	while(t.root != NULL)
+	while (t.root != NULL)
 	{
 		stepToLowestInternal(&t);
 		free(t.current->data);
 		free(t.current);
-		if(t.current->parent->left == t.current)
+		if (t.current->parent->left == t.current)
 		{
 			t.current->parent->left = NULL;
 		}
@@ -116,7 +116,7 @@ void trim(tree *t, treeDir dir)
 {
 	tree toFree;
 	toFree.dataSize = t->dataSize;
-	switch(dir)
+	switch (dir)
 	{
 		case left:
 			toFree.root = t->current->left;
@@ -126,7 +126,7 @@ void trim(tree *t, treeDir dir)
 			t->current->left = NULL;
 		case up:
 			toFree.root = t->root;
-			if(t->current->parent->left == t->current)
+			if (t->current->parent->left == t->current)
 				t->current->parent->left = NULL;
 			else
 				t->current->parent->right = NULL;
@@ -138,28 +138,116 @@ void trim(tree *t, treeDir dir)
 
 treeNodeType currentNodeType(tree t)
 {
-	if(t.current->parent == NULL)
-		return root;
-	else if(t.current->left == NULL && t.current->right == NULL)
+	if (t.current->left == NULL && t.current->right == NULL)
 		return leaf;
-	else if(t.current->left == NULL)
+	else if (t.current->left == NULL)
 		return rightInternal;
-	else if(t.current->right == NULL)
+	else if (t.current->right == NULL)
 		return leftInternal;
 	else
 		return dualInternal;
 }
 
-void stepToLowestInternal(tree *t) /* TODO: this function */
+int isRoot(tree t)
 {
-	stack path = newStack(sizeof(treeDir));
-	treeDir type;
-	int deepest = 0;
-	while(currentNodeType(*t) != leaf && currentNodeType(*t) != rightInternal)
+	if (t.current->parent == NULL)
+		return 1;
+	return 0;
+}
+
+static void stepLeftWhilePossible(tree *t, int *level, int *deepest, treeNode **deepestNode, stack *path)
+{
+	treeDir pathTaken;
+	while (currentNodeType(*t) != leaf && currentNodeType(*t) != rightInternal)
 	{
-		type = left;
-		step(t, type);
-		spush(&type, &path);
-		deepest++;
+		if (currentNodeType(*t) == dualInternal)
+		{
+			pathTaken = left;
+			spush(&pathTaken, path);
+		}
+		(*level)++;
+		step(t, left);
+		if (*level > *deepest)
+		{
+			*deepest = *level;
+			*deepestNode = t->current;
+		}
 	}
+}
+
+static void stepUpToFirstDual(tree *t, stack path, int *level)
+{
+	while (stackSize(path) > 0 && currentNodeType(*t) != dualInternal)
+	{
+		(*level)--;
+		step(t, up);
+	}
+}
+
+static void stepRightIfDual(tree *t, int *level, stack *path)
+{
+	treeDir pathTaken;
+	if (currentNodeType(*t) == dualInternal)
+	{
+		(*level)++;
+		step(t, right);
+		spop(path);
+		pathTaken = right;
+		spush(&pathTaken, path);
+	}
+}
+
+static void stepRightUntilCanStepLeft(tree *t, int *level, int *deepest, treeNode **deepestNode)
+{
+	while (currentNodeType(*t) == rightInternal)
+	{
+		(*level)++;
+		step(t, right);
+		if (*level > *deepest)
+		{
+			*deepest = *level;
+			*deepestNode = t->current;
+		}
+	}
+}
+
+static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t,stack *path, int *level)
+{
+	if (currentNodeType(*t) == leaf && !isRoot(*t))
+	{
+		while (stackSize(*path) > 0 && *(treeNodeType *) speek(*path) == right)
+		{
+			(*level)--;
+			step(t, up);
+			if (currentNodeType(*t) == dualInternal)
+				spop(path);
+		}
+		if(stackSize(*path) > 0)
+		{
+			(*level)++;
+			step(t,right);
+		}
+	}
+}
+
+void stepToLowestInternal(tree *t)
+{
+	int current = 0;
+	int deepest = 0;
+	treeNode *deepestNode = t->root;
+	stack path = newStack(sizeof(treeDir));
+	t->current = t->root;
+	do
+	{
+		stepLeftWhilePossible(t,&current,&deepest,&deepestNode,&path);
+
+		stepUpToFirstDual(t,path,&current);
+
+		stepRightIfDual(t,&current,&path);
+
+		stepRightUntilCanStepLeft(t,&current,&deepest,&deepestNode);
+
+		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t,&path,&current);
+	} while (stackSize(path) != 0);
+	t->current = deepestNode;
 }

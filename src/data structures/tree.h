@@ -1,3 +1,5 @@
+#include "stack.h"
+
 #ifndef CRCT_TREE_H
 #define CRCT_TREE_H
 
@@ -41,6 +43,18 @@ void splice(tree, treeDir, tree);
 void trim(tree *, treeDir);
 
 treeNodeType currentNodeType(tree);
+
+int isRoot(tree);
+
+static void stepLeftWhilePossible(tree *, int *, int *, treeNode **, stack *);
+
+static void stepUpToFirstDual(tree *, stack, int *);
+
+static void stepRightIfDual(tree *, int *, stack *);
+
+static void stepRightUntilCanStepLeft(tree *, int *, int *, treeNode **);
+
+static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *,stack *, int *);
 
 void stepToLowestInternal(tree *);
 

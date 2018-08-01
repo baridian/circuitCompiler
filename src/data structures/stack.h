@@ -25,3 +25,5 @@ void spush(void *, stack *);
 void *speek(stack);
 
 void frees(stack);
+
+int stackSize(stack);

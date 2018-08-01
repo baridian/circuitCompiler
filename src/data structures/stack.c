@@ -55,3 +55,8 @@ void frees(stack s)
     free(s.stackBase);
     free(s.temp);
 }
+
+int stackSize(stack s)
+{
+    return ((unsigned)s.stackP - (unsigned)s.stackBase)/ s.dataSize;
+}
