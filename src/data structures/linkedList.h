@@ -1,7 +1,3 @@
-//
-// Created by ian on 7/31/2018.
-//
-
 #ifndef CRCT_LINKEDLIST_H
 #define CRCT_LINKEDLIST_H
 

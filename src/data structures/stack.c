@@ -1,7 +1,3 @@
-//
-// Created by ian on 7/31/2018.
-//
-
 #include <malloc.h>
 #include <string.h>
 #include "stack.h"

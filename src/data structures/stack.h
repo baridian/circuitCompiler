@@ -1,7 +1,3 @@
-//
-// Created by ian on 7/31/2018.
-//
-
 #ifndef CRCT_STACK_H
 #define CRCT_STACK_H
 
