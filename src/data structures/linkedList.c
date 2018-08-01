@@ -31,7 +31,7 @@ void llInsert(linkedList *list, int index, void *data)
                 currentNode = currentNode->next;
             else
             {
-                fprintf(stderr,"ERROR: linked list out of bounds exception");
+                fprintf(stderr,"ERROR: linked list out of bounds exception\n");
                 exit(1);
             }
         }
@@ -65,7 +65,7 @@ void llErase(linkedList *list,int index)
                 currentNode = currentNode->next;
             else
             {
-                fprintf(stderr, "ERROR: linked list out of bounds exception");
+                fprintf(stderr, "ERROR: linked list out of bounds exception\n");
                 exit(1);
             }
         }
@@ -116,7 +116,7 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
     negativeIndexWrap(*list, &index);
     if(list->dataSize != toInsert.dataSize)
     {
-        fprintf(stderr,"ERROR: lists type mismatch");
+        fprintf(stderr,"ERROR: lists type mismatch\n");
         exit(1);
     }
     if (index != 0)
@@ -127,7 +127,7 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
                 currentNode = currentNode->next;
             else
             {
-                fprintf(stderr, "ERROR: linked list out of bounds exception");
+                fprintf(stderr, "ERROR: linked list out of bounds exception\n");
                 exit(1);
             }
         }

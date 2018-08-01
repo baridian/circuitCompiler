@@ -30,8 +30,10 @@ void step(tree *,treeDir);
 
 void splice(tree,treeDir,tree);
 
-void trim(tree,treeDir);
+void trim(tree *,treeDir);
 
 void stepToLowestInternal(tree *);
+
+void resetToRoot(tree *);
 
 void freeTree(tree);
