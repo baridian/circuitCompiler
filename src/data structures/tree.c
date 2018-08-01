@@ -4,14 +4,17 @@
 #include "tree.h"
 #include "stack.h"
 
-/*TODO: add in fix for null root */
-
-tree newTree(int dataSize)
+tree newTree(int dataSize, void *rootData)
 {
 	tree toReturn;
-	toReturn.root = NULL;
+	toReturn.root = (treeNode *) malloc(sizeof(treeNode));
 	toReturn.dataSize = (unsigned) dataSize;
-	toReturn.current = NULL;
+	toReturn.root->data = malloc(toReturn.dataSize);
+	memcpy(toReturn.root->data, rootData, toReturn.dataSize);
+	toReturn.root->parent = NULL;
+	toReturn.root->left = NULL;
+	toReturn.root->right = NULL;
+	toReturn.current = toReturn.root;
 	return toReturn;
 }
 
@@ -64,6 +67,11 @@ void addNode(tree t, treeDir dir, void *data)
 	}
 }
 
+void *readNode(tree t)
+{
+	return t.current->data;
+}
+
 void step(tree *t, treeDir dir)
 {
 	switch (dir)
@@ -91,25 +99,6 @@ void splice(tree t, treeDir dir, tree splicingOn)
 void resetToRoot(tree *t)
 {
 	t->current = t->root;
-}
-
-void freeTree(tree t)
-{
-	while (t.root != NULL)
-	{
-		stepToLowestInternal(&t);
-		free(t.current->data);
-		free(t.current);
-		if (t.current->parent->left == t.current)
-		{
-			t.current->parent->left = NULL;
-		}
-		else
-		{
-			t.current->parent->right = NULL;
-		}
-		resetToRoot(&t);
-	}
 }
 
 void trim(tree *t, treeDir dir)
@@ -250,4 +239,22 @@ void stepToLowestInternal(tree *t)
 		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t, &path, &current);
 	} while (stackSize(path) != 0);
 	t->current = deepestNode;
+}
+
+void freeTree(tree t)
+{
+	do
+	{
+		stepToLowestInternal(&t);
+		free(t.current->data);
+		free(t.current);
+		if (t.current->parent->left == t.current)
+		{
+			t.current->parent->left = NULL;
+		}
+		else
+		{
+			t.current->parent->right = NULL;
+		}
+	} while (t.root != t.current);
 }

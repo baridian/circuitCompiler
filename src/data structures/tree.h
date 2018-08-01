@@ -32,9 +32,11 @@ typedef enum treeNodeType
 	root, dualInternal, leftInternal, rightInternal, leaf
 } treeNodeType;
 
-tree newTree(int);
+tree newTree(int, void *);
 
 void addNode(tree, treeDir, void *);
+
+void *readNode(tree);
 
 void step(tree *, treeDir);
 
