@@ -199,14 +199,40 @@ void changeToPostFix(symbol *array, int length, char *opTable[], int tableLength
 	{
 		if(temp[tempCounter].type == operator)
 		{
-			poppedSymbol = *(symbol *)speek(symbolStack); /*pop operators off stack until higher precendence found*/
-			while(stackSize(symbolStack) > 0 && comparePrecedence(temp[tempCounter],poppedSymbol,opTable,tableLength) < 1)
+			poppedSymbol = *(symbol *)speek(symbolStack);
+			if(poppedSymbol.data.operand[0] == ')')
 			{
-				array[outputCounter++] = poppedSymbol;
-				spop(&symbolStack);
-				poppedSymbol = *(symbol *)speek(symbolStack);
+				/*pop until opening parenthesis found*/
+				while(stackSize(symbolStack) > 0 && poppedSymbol.data.operand[0] != '(')
+				{
+					array[outputCounter++] = poppedSymbol;
+					spop(&symbolStack);
+					poppedSymbol = *(symbol *)speek(symbolStack);
+				}
+				if(stackSize(symbolStack) == 0)
+				{
+					fprintf(stderr,"ERROR: opening parenthesis not found");
+					exit(1);
+				}
+				else
+					spop(&symbolStack);
 			}
-			spush(temp + tempCounter,&symbolStack);
+			else
+			{
+				/*pop until lower precedence found*/
+				while (stackSize(symbolStack) > 0 &&
+					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) < 1)
+				{
+					array[outputCounter++] = poppedSymbol;
+					spop(&symbolStack);
+					poppedSymbol = *(symbol *) speek(symbolStack);
+				}
+				spush(temp + tempCounter, &symbolStack);
+			}
+		}
+		else
+		{
+			array[outputCounter++] = temp[tempCounter];
 		}
 	}
 	free(temp);
