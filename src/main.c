@@ -147,7 +147,7 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 			}
 		}
 	}
-	return toReturn
+	return toReturn;
 }
 
 void convertExpression(char *input, char *output,char *opTable[], int tableLength)
