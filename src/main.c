@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "data structures/linkedList.h"
 #include "data structures/tree.h"
 
@@ -62,13 +63,20 @@ int isDoubleCharOperator(char a, char b, char *opTable[], int tableLength)
 	return 0;
 }
 
-linkedList generateSymbolicString(linkedList input, char *opTable[], int tableLength)
+int isLiteral(char c)
 {
-	int i;
+	return '0' <= c && c <= '9';
+}
+
+linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLength)
+{
+	int i,j;
+	int initialized = 0;
+	int literalVal;
 	char a,b;
 	symbol start;
+	linkedList variableName;
 	linkedList toReturn;
-	int initialized = 0;
 	for(i=0;i<llLength(input);i++)
 	{
 		a = *(char *)llread(input,i);
@@ -93,16 +101,64 @@ linkedList generateSymbolicString(linkedList input, char *opTable[], int tableLe
 				initialized = 1;
 			}
 		}
-	} /*TODO: add literal and variable detection*/
+		else if(isLiteral(a))
+		{
+			literalVal = 0;
+			for(j = i; isLiteral(a);j++)
+			{
+				a = *(char *)llread(input,j);
+				literalVal *= 10;
+				literalVal += a - '0';
+			}
+			i = j;
+			start.type = literal;
+			start.data.literal = literalVal;
+			if(initialized)
+				llAppend(&toReturn,&start);
+			else
+			{
+				toReturn = arrayToll(&start,sizeof(symbol),1);
+				initialized = 1;
+			}
+		}
+		else
+		{
+			variableName = arrayToll(&a,sizeof(char),1);
+			for(j = i; !isLiteral(a) && !isOperator(a,b,opTable,tableLength) && j < llLength(input);j++)
+			{
+				llAppend(&variableName,&a);
+				a = *(char *)llread(input,j);
+				if(i != llLength(input) - 1)
+					b = *(char *)llread(input,j+1);
+
+			}
+			i = j;
+			llErase(&variableName,0);
+			start.type = variable;
+			start.data.variable = (char *)malloc(sizeof(char) * llLength(variableName));
+			llToArray(variableName,start.data.variable);
+			freell(variableName);
+			if(initialized)
+				llAppend(&toReturn,&start);
+			else
+			{
+				toReturn = arrayToll(&start,sizeof(symbol),1);
+				initialized = 1;
+			}
+		}
+	}
+	return toReturn
 }
 
 void convertExpression(char *input, char *output,char *opTable[], int tableLength)
 {
 	linkedList charString = arrayToll(input,sizeof(char),sizeof(input));
-	linkedList symbolicString = generateSymbolicString(charString,opTable,tableLength);
+	linkedList symbolicString = generateSymbolicList(charString,opTable,tableLength);
+	freell(charString);
 	tree expressionTree;
 	/*changeToPostFix(symbolicString);
-	generateTree(symbolicString, &expressionTree);*/
+	  freell(symbolicString);
+	  generateTree(symbolicString, &expressionTree);*/
 
 }
 

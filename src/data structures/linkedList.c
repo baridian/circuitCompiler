@@ -192,6 +192,13 @@ linkedList arrayToll(void *array, int dataSize, int length)
 	return toReturn;
 }
 
+void llToArray(linkedList list, void *array)
+{
+	int i;
+	for(i=0;i<llLength(list);i++)
+		memcpy((char *)array + list.dataSize * i, llread(list,i),list.dataSize);
+}
+
 static void freeHelper(linkedListNode *start)
 {
 	if (start->next != NULL)

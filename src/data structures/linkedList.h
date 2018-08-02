@@ -37,6 +37,8 @@ int llMatch(linkedList lookingAt, linkedList matchData);
 
 linkedList arrayToll(void *data, int elementSize, int length);
 
+void llToArray(linkedList,void *array);
+
 static void freeHelper(linkedListNode *);
 
 void freell(linkedList);
