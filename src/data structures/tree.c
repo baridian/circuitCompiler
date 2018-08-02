@@ -238,6 +238,7 @@ void stepToLowestInternal(tree *t)
 
 		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t, &path, &current);
 	} while (stackSize(path) != 0);
+	frees(path);
 	t->current = deepestNode;
 }
 
