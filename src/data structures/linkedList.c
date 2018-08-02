@@ -8,7 +8,7 @@ int llLength(linkedList list)
 {
 	int i;
 	linkedListNode *currentNode = list.head;
-	for (i = 0; currentNode = currentNode->next; i++);
+	for (i = 1; currentNode = currentNode->next; i++);
 	return i;
 }
 

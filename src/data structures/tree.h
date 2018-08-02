@@ -32,15 +32,16 @@ typedef enum treeNodeType
 	root, dualInternal, leftInternal, rightInternal, leaf
 } treeNodeType;
 
-tree newTree(int, void *);
 
-void addNode(tree, treeDir, void *);
+tree newTree(int elementSize, void *rootData);
+
+void addNode(tree, treeDir, void *data);
 
 void *readNode(tree);
 
 void step(tree *, treeDir);
 
-void splice(tree, treeDir, tree);
+void splice(tree splicingOnto, treeDir, tree attaching);
 
 void trim(tree *, treeDir);
 

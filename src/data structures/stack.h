@@ -14,13 +14,13 @@ typedef struct stack
 	unsigned dataSize;
 } stack;
 
-stack newStack(int);
+stack newStack(int elementSize);
 
 static void rescaleStack(stack *);
 
 void *spop(stack *);
 
-void spush(void *, stack *);
+void spush(void *data, stack *);
 
 void *speek(stack);
 

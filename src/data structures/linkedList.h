@@ -21,21 +21,21 @@ int llLength(linkedList);
 
 static void negativeIndexWrap(linkedList, int *);
 
-void llInsert(linkedList *, int, void *);
+void llInsert(linkedList *, int index, void *data);
 
-void llErase(linkedList *, int);
+void llErase(linkedList *, int index);
 
-void *llread(linkedList, int);
+void *llread(linkedList, int index);
 
-void llAppend(linkedList *, void *);
+void llAppend(linkedList *, void *data);
 
-void llInsertList(linkedList *, int, linkedList);
+void llInsertList(linkedList *insertInto, int index, linkedList inserting);
 
 static int memcmpr(void *, void *, int);
 
-int llMatch(linkedList, linkedList);
+int llMatch(linkedList lookingAt, linkedList matchData);
 
-linkedList arrayToll(void *, int, int);
+linkedList arrayToll(void *data, int elementSize, int length);
 
 static void freeHelper(linkedListNode *);
 
