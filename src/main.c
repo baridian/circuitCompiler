@@ -266,6 +266,23 @@ void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 	frees(treeStack);
 }
 
+void parseBackspaces(char *string)
+{
+	int length = (int)strlen(string);
+	int index;
+	linkedList charString = arrayToll(string,sizeof(char),length);
+	linkedList matchData = arrayToll("\b",sizeof(char),1);
+	while((index = llMatch(charString,matchData)) != -1)
+	{
+		llErase(&charString,index);
+		llErase(&charString,index);
+	}
+	llAppend(&charString,"\0");
+	llToArray(charString,string);
+	freell(charString);
+	freell(matchData);
+}
+
 void breakDownTree(tree expressionTree, char *output)
 {
 	int outputOffset = 0;
@@ -310,6 +327,7 @@ void breakDownTree(tree expressionTree, char *output)
 		while(output[outputOffset++]);
 		resetToRoot(&expressionTree);
 	}
+	parseBackspaces(output);
 }
 
 void convertExpression(char *input, char *output, char *opTable[], int tableLength)
