@@ -73,26 +73,26 @@ int isLiteral(char c)
 
 linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLength)
 {
-	int i, j;
+	int inputOffset;
 	int initialized = 0;
 	int literalVal;
-	char a, b;
+	char first, second;
 	symbol start;
 	linkedList variableName;
 	linkedList toReturn;
-	for (i = 0; i < llLength(input); i++)
+	for (inputOffset = 0; inputOffset < llLength(input); inputOffset++)
 	{
-		a = *(char *) llread(input, i);
-		if (i != llLength(input) - 1)
-			b = *(char *) llread(input, i + 1);
+		first = *(char *) llread(input, inputOffset);
+		if (inputOffset != llLength(input) - 1)
+			second = *(char *) llread(input, inputOffset + 1);
 		else
-			b = '\0';
-		if (isOperator(a, b, opTable, tableLength))
+			second = '\0';
+		if (isOperator(first, second, opTable, tableLength))
 		{
 			start.type = operator;
-			start.data.operand[0] = a;
-			if (isDoubleCharOperator(a, b, opTable, tableLength))
-				start.data.operand[1] = b;
+			start.data.operand[0] = first;
+			if (isDoubleCharOperator(first, second, opTable, tableLength))
+				start.data.operand[1] = second;
 			else
 				start.data.operand[1] = '\0';
 			start.data.operand[2] = '\0';
@@ -104,16 +104,15 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 				initialized = 1;
 			}
 		}
-		else if (isLiteral(a))
+		else if (isLiteral(first))
 		{
 			literalVal = 0;
-			for (j = i; isLiteral(a); j++)
+			for (; isLiteral(first); inputOffset++)
 			{
-				a = *(char *) llread(input, j);
+				first = *(char *) llread(input, inputOffset);
 				literalVal *= 10;
-				literalVal += a - '0';
+				literalVal += first - '0';
 			}
-			i = j;
 			start.type = literal;
 			start.data.literal = literalVal;
 			if (initialized)
@@ -126,15 +125,15 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 		}
 		else
 		{
-			variableName = arrayToll(&a, sizeof(char), 1);
-			for (j = i; !isLiteral(a) && !isOperator(a, b, opTable, tableLength) && j < llLength(input); j++)
+			variableName = arrayToll(&first, sizeof(char), 1);
+			for (; !isLiteral(first) && !isOperator(first, second, opTable, tableLength) &&
+				   inputOffset < llLength(input); inputOffset++)
 			{
-				llAppend(&variableName, &a);
-				a = *(char *) llread(input, j);
-				if (i != llLength(input) - 1)
-					b = *(char *) llread(input, j + 1);
+				llAppend(&variableName, &first);
+				first = *(char *) llread(input, inputOffset);
+				if (inputOffset != llLength(input) - 1)
+					second = *(char *) llread(input, inputOffset + 1);
 			}
-			i = j;
 			llErase(&variableName, 0);
 			start.type = variable;
 			start.data.variable = (char *) malloc(sizeof(char) * llLength(variableName));
@@ -154,26 +153,26 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 
 int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 {
-	int i,j,aLevel, bLevel;
-	for(i=0;i<tableLength;i++)
+	int i, j, aLevel, bLevel;
+	for (i = 0; i < tableLength; i++)
 	{
-		for(j=0;opTable[i][j];j++)
+		for (j = 0; opTable[i][j]; j++)
 		{
-			if(opTable[i][j] != ',')
+			if (opTable[i][j] != ',')
 			{
-				if(opTable[i][j] == a.data.operand[0])
+				if (opTable[i][j] == a.data.operand[0])
 				{
-					if(a.data.operand[1])
+					if (a.data.operand[1])
 					{
-						if(opTable[i][j + 1] == a.data.operand[1])
+						if (opTable[i][j + 1] == a.data.operand[1])
 							aLevel = i;
 					}
 					else
 						aLevel = i;
 				}
-				if(opTable[i][j] == b.data.operand[0])
+				if (opTable[i][j] == b.data.operand[0])
 				{
-					if(b.data.operand[1])
+					if (b.data.operand[1])
 					{
 						if(opTable[i][j + 1] == b.data.operand[1])
 							bLevel = i;
@@ -192,26 +191,26 @@ void changeToPostFix(symbol array[], int length, char *opTable[], int tableLengt
 	stack symbolStack = newStack(sizeof(symbol));
 	int tempCounter = 0;
 	int outputCounter = 0;
-	symbol *temp = (symbol *)malloc(sizeof(symbol) * length);
+	symbol *temp = (symbol *) malloc(sizeof(symbol) * length);
 	symbol poppedSymbol;
-	memcpy(temp,array,sizeof(symbol) * length); /*TODO: add parenthesis system, non-operator handling*/
-	for(tempCounter = 0;tempCounter < length; tempCounter++)
+	memcpy(temp, array, sizeof(symbol) * length);
+	for (tempCounter = 0; tempCounter < length; tempCounter++)
 	{
-		if(temp[tempCounter].type == operator)
+		if (temp[tempCounter].type == operator)
 		{
-			poppedSymbol = *(symbol *)speek(symbolStack);
-			if(poppedSymbol.data.operand[0] == ')')
+			poppedSymbol = *(symbol *) speek(symbolStack);
+			if (poppedSymbol.data.operand[0] == ')')
 			{
 				/*pop until opening parenthesis found*/
-				while(stackSize(symbolStack) > 0 && poppedSymbol.data.operand[0] != '(')
+				while (stackSize(symbolStack) > 0 && poppedSymbol.data.operand[0] != '(')
 				{
 					array[outputCounter++] = poppedSymbol;
 					spop(&symbolStack);
-					poppedSymbol = *(symbol *)speek(symbolStack);
+					poppedSymbol = *(symbol *) speek(symbolStack);
 				}
-				if(stackSize(symbolStack) == 0)
+				if (stackSize(symbolStack) == 0)
 				{
-					fprintf(stderr,"ERROR: opening parenthesis not found");
+					fprintf(stderr, "ERROR: opening parenthesis not found");
 					exit(1);
 				}
 				else
@@ -272,12 +271,12 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	linkedList charString = arrayToll(input, sizeof(char), sizeof(input));
 	linkedList symbolicList = generateSymbolicList(charString, opTable, tableLength);
 	int length = llLength(symbolicList);
-	symbol *symbolicString = (symbol *)malloc(llLength(symbolicList) * sizeof(symbol));
+	symbol *symbolicString = (symbol *) malloc(llLength(symbolicList) * sizeof(symbol));
 	tree expressionTree;
-	llToArray(symbolicList,symbolicString);
+	llToArray(symbolicList, symbolicString);
 	freell(charString);
 	freell(symbolicList);
-	changeToPostFix(symbolicString,length,opTable,tableLength);
+	changeToPostFix(symbolicString, length, opTable, tableLength);
 	free(symbolicString);
 	generateTree(symbolicString,length, &expressionTree);
 	/*TODO: Add atomic expression generation, subtree breakdown*/
