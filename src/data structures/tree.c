@@ -242,6 +242,15 @@ void stepToLowestInternal(tree *t)
 	t->current = deepestNode;
 }
 
+treeDir stepUpAndGetStepToPrevious(tree *t)
+{
+	treeNode *old = t->current;
+	step(t,up);
+	if(t->current->left == old)
+		return left;
+	return right;
+}
+
 void freeTree(tree t)
 {
 	do

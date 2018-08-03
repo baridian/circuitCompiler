@@ -63,4 +63,6 @@ void stepToLowestInternal(tree *);
 
 void resetToRoot(tree *);
 
+treeDir stepUpAndGetStepToPrevious(tree *);
+
 void freeTree(tree);

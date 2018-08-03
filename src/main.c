@@ -174,7 +174,7 @@ int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 				{
 					if (b.data.operand[1])
 					{
-						if(opTable[i][j + 1] == b.data.operand[1])
+						if (opTable[i][j + 1] == b.data.operand[1])
 							bLevel = i;
 					}
 					else
@@ -245,25 +245,71 @@ void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 	tree tempLeft;
 	tree tempRight;
 	int symbolOffset;
-	for(symbolOffset = 0; symbolOffset < length; symbolOffset++)
+	for (symbolOffset = 0; symbolOffset < length; symbolOffset++)
 	{
-		tempRoot = newTree(sizeof(symbol),symbolicString + symbolOffset);
-		if(symbolicString[symbolOffset].type == operator)
+		tempRoot = newTree(sizeof(symbol), symbolicString + symbolOffset);
+		if (symbolicString[symbolOffset].type == operator)
 		{
-			tempRight = *(tree *)spop(&treeStack);
-			tempLeft = *(tree *)spop(&treeStack);
-			splice(tempRoot,right,tempRight);
-			splice(tempRoot,left,tempLeft);
+			tempRight = *(tree *) spop(&treeStack);
+			tempLeft = *(tree *) spop(&treeStack);
+			splice(tempRoot, right, tempRight);
+			splice(tempRoot, left, tempLeft);
 		}
-		spush(&tempRoot,&treeStack);
+		spush(&tempRoot, &treeStack);
 	}
-	if(stackSize(treeStack) != 1)
+	if (stackSize(treeStack) != 1)
 	{
-		fprintf(stderr,"ERROR: Invalid expression\n");
+		fprintf(stderr, "ERROR: Invalid expression\n");
 		exit(1);
 	}
-	*expressionTree = *(tree *)spop(&treeStack);
+	*expressionTree = *(tree *) spop(&treeStack);
 	frees(treeStack);
+}
+
+void breakDownTree(tree expressionTree, char *output)
+{
+	int outputOffset = 0;
+	int expressionCount = 0;
+	symbol operator;
+	symbol leftOperand;
+	symbol rightOperand;
+	symbol newSymbol;
+	treeDir directionToTrim;
+	resetToRoot(&expressionTree);
+	while (currentNodeType(expressionTree) == dualInternal)
+	{
+		stepToLowestInternal(&expressionTree);
+		step(&expressionTree, up);
+		operator = *(symbol *) readNode(expressionTree);
+		step(&expressionTree, left);
+		leftOperand = *(symbol *) readNode(expressionTree);
+		step(&expressionTree, up);
+		step(&expressionTree, right);
+		rightOperand = *(symbol *) readNode(expressionTree);
+		sprintf(output + outputOffset, "%c=%s%d%s%s%s%d%s;", expressionCount++,
+				leftOperand.type == variable ? leftOperand.data.variable : "",
+				leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
+				operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
+				rightOperand.type == literal ? rightOperand.data.literal : 1, rightOperand.type == literal ? "" : "\b");
+		newSymbol.type = variable;
+		newSymbol.data.variable = (char *)malloc((unsigned)(2 + expressionCount / 10));
+		sprintf(newSymbol.data.variable,"c%d",expressionCount);
+		if(leftOperand.type == variable)
+			free(leftOperand.data.variable);
+		if(rightOperand.type == variable)
+			free(rightOperand.data.variable);
+		step(&expressionTree, up);
+		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
+		if(!isRoot(expressionTree))
+		{
+			trim(&expressionTree, directionToTrim);
+			addNode(expressionTree, directionToTrim, &newSymbol);
+		}
+		else
+			freeTree(expressionTree);
+		while(output[outputOffset++]);
+		resetToRoot(&expressionTree);
+	}
 }
 
 void convertExpression(char *input, char *output, char *opTable[], int tableLength)
@@ -278,8 +324,8 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	freell(symbolicList);
 	changeToPostFix(symbolicString, length, opTable, tableLength);
 	free(symbolicString);
-	generateTree(symbolicString,length, &expressionTree);
-	/*TODO: Add atomic expression generation, subtree breakdown*/
+	generateTree(symbolicString, length, &expressionTree);
+	breakDownTree(expressionTree,output);
 }
 
 int main()
