@@ -187,7 +187,7 @@ int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 	return bLevel - aLevel;
 }
 
-void changeToPostFix(symbol *array, int length, char *opTable[], int tableLength)
+void changeToPostFix(symbol array[], int length, char *opTable[], int tableLength)
 {
 	stack symbolStack = newStack(sizeof(symbol));
 	int tempCounter = 0;
@@ -239,6 +239,34 @@ void changeToPostFix(symbol *array, int length, char *opTable[], int tableLength
 	frees(symbolStack);
 }
 
+void generateTree(symbol symbolicString[], int length, tree *expressionTree)
+{
+	stack treeStack = newStack(sizeof(tree));
+	tree tempRoot;
+	tree tempLeft;
+	tree tempRight;
+	int symbolOffset;
+	for(symbolOffset = 0; symbolOffset < length; symbolOffset++)
+	{
+		tempRoot = newTree(sizeof(symbol),symbolicString + symbolOffset);
+		if(symbolicString[symbolOffset].type == operator)
+		{
+			tempRight = *(tree *)spop(&treeStack);
+			tempLeft = *(tree *)spop(&treeStack);
+			splice(tempRoot,right,tempRight);
+			splice(tempRoot,left,tempLeft);
+		}
+		spush(&tempRoot,&treeStack);
+	}
+	if(stackSize(treeStack) != 1)
+	{
+		fprintf(stderr,"ERROR: Invalid expression\n");
+		exit(1);
+	}
+	*expressionTree = *(tree *)spop(&treeStack);
+	frees(treeStack);
+}
+
 void convertExpression(char *input, char *output, char *opTable[], int tableLength)
 {
 	linkedList charString = arrayToll(input, sizeof(char), sizeof(input));
@@ -251,8 +279,8 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	freell(symbolicList);
 	changeToPostFix(symbolicString,length,opTable,tableLength);
 	free(symbolicString);
-	  /*generateTree(symbolicString, &expressionTree);*/
-
+	generateTree(symbolicString,length, &expressionTree);
+	/*TODO: Add atomic expression generation, subtree breakdown*/
 }
 
 int main()
