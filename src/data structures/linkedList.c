@@ -14,7 +14,7 @@ int llLength(linkedList list)
 
 static void negativeIndexWrap(linkedList list, int *index)
 {
-	*index = *index < 0 ? *index : llLength(list) - *index;
+	*index = *index >= 0 ? *index : llLength(list) + *index;
 }
 
 void llInsert(linkedList *list, int index, void *data)
