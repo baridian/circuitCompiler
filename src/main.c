@@ -186,6 +186,14 @@ int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 	return bLevel - aLevel;
 }
 
+/*
+ * if symbol or literal encountered, goes straight to output buffer. If operator encountered,
+ * operators are popped off and appended to the output until a operator of lower precedence is found,
+ * then the current operator is pushed on. When a right parenthesis is encountered, all the symbols are popped off
+ * and appended to the output except the left parenthesis, which is popped off but not appended.
+ * When the input buffer is exhausted, all remaining operators on the stack are popped off and appended. If a parenthesis
+ * is encountered, an error is thrown.
+ */
 void changeToPostFix(symbol array[], int length, char *opTable[], int tableLength)
 {
 	stack symbolStack = newStack(sizeof(symbol));
@@ -234,10 +242,26 @@ void changeToPostFix(symbol array[], int length, char *opTable[], int tableLengt
 			array[outputCounter++] = temp[tempCounter];
 		}
 	}
+	while(stackSize(symbolStack) > 0) /*clear out stack after symbols end*/
+	{
+		poppedSymbol = *(symbol *)spop(&symbolStack);
+		if(poppedSymbol.data.operand[0] == '(')
+		{
+			fprintf(stderr,"ERROR: unclosed parenthesis\n");
+			exit(1);
+		}
+		array[outputCounter++] = poppedSymbol;
+	}
 	free(temp);
 	frees(symbolStack);
 }
 
+/*
+ * each time a literal or operand is found, push it to the stack as a tree consisting of just the operand root.
+ * When an operator is found, it pops the two most recent trees off the stack and splices them to a tree with
+ * the operator as the root and the two most recent trees as it's children.
+ * Repeat until string parsed, if stack != 1, error.
+ */
 void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 {
 	stack treeStack = newStack(sizeof(tree));
@@ -268,17 +292,17 @@ void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 
 void parseBackspaces(char *string)
 {
-	int length = (int)strlen(string);
+	int length = (int) strlen(string);
 	int index;
-	linkedList charString = arrayToll(string,sizeof(char),length);
-	linkedList matchData = arrayToll("\b",sizeof(char),1);
-	while((index = llMatch(charString,matchData)) != -1)
-	{
-		llErase(&charString,index);
-		llErase(&charString,index);
+	linkedList charString = arrayToll(string, sizeof(char), length);
+	linkedList matchData = arrayToll("\b", sizeof(char), 1);
+	while ((index = llMatch(charString, matchData)) != -1)
+	{ /*when a backspace is found replace it and the character before it*/
+		llErase(&charString, index - 1);
+		llErase(&charString, index - 1);
 	}
-	llAppend(&charString,"\0");
-	llToArray(charString,string);
+	llAppend(&charString, "\0");
+	llToArray(charString, string);
 	freell(charString);
 	freell(matchData);
 }
@@ -293,9 +317,9 @@ void breakDownTree(tree expressionTree, char *output)
 	symbol newSymbol;
 	treeDir directionToTrim;
 	resetToRoot(&expressionTree);
-	while (currentNodeType(expressionTree) == dualInternal)
+	while (currentNodeType(expressionTree) == dualInternal) /*while tree is not totally broken down*/
 	{
-		stepToLowestInternal(&expressionTree);
+		stepToLowestInternal(&expressionTree); /*populate atomic expression data from lowest parent / child set*/
 		step(&expressionTree, up);
 		operator = *(symbol *) readNode(expressionTree);
 		step(&expressionTree, left);
@@ -303,28 +327,36 @@ void breakDownTree(tree expressionTree, char *output)
 		step(&expressionTree, up);
 		step(&expressionTree, right);
 		rightOperand = *(symbol *) readNode(expressionTree);
+
+		/*for the atomic expression data, format it and print it to the output*/
 		sprintf(output + outputOffset, "%c=%s%d%s%s%s%d%s;", expressionCount++,
 				leftOperand.type == variable ? leftOperand.data.variable : "",
 				leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
 				operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
 				rightOperand.type == literal ? rightOperand.data.literal : 1, rightOperand.type == literal ? "" : "\b");
+
+		/*create node for the variable assigned to the atomic expression*/
 		newSymbol.type = variable;
-		newSymbol.data.variable = (char *)malloc((unsigned)(2 + expressionCount / 10));
-		sprintf(newSymbol.data.variable,"c%d",expressionCount);
-		if(leftOperand.type == variable)
+		newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
+		sprintf(newSymbol.data.variable, "c%d", expressionCount);
+
+		/*free the old atomic expression*/
+		if (leftOperand.type == variable)
 			free(leftOperand.data.variable);
-		if(rightOperand.type == variable)
+		if (rightOperand.type == variable)
 			free(rightOperand.data.variable);
 		step(&expressionTree, up);
 		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
-		if(!isRoot(expressionTree))
+		/*if this is not the final assignment put variable in place of old atomic expression, else free*/
+		if (!isRoot(expressionTree))
 		{
 			trim(&expressionTree, directionToTrim);
 			addNode(expressionTree, directionToTrim, &newSymbol);
 		}
 		else
 			freeTree(expressionTree);
-		while(output[outputOffset++]);
+		while (output[outputOffset++]);
+		/*reset to root and start again*/
 		resetToRoot(&expressionTree);
 	}
 	parseBackspaces(output);
@@ -343,7 +375,7 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	changeToPostFix(symbolicString, length, opTable, tableLength);
 	free(symbolicString);
 	generateTree(symbolicString, length, &expressionTree);
-	breakDownTree(expressionTree,output);
+	breakDownTree(expressionTree, output);
 }
 
 int main()
@@ -351,10 +383,3 @@ int main()
 	printf("Hello, World!\n");
 	return 0;
 }
-
-/* TODO: expression parsing:
- * convert string to symbolic string
- * convert infix symbolic string to postfix symbolic string
- * convert postfix symbolic string to tree
- * subtree breakdown
- */
