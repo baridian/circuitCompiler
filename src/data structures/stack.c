@@ -6,7 +6,7 @@ stack newStack(int dataSize)
 {
 	stack toReturn;
 	toReturn.dataSize = (unsigned) dataSize;
-	toReturn.allocated = dataSize * START_SIZE;
+	toReturn.allocated = START_SIZE;
 	toReturn.stackBase = malloc(toReturn.dataSize * START_SIZE);
 	toReturn.temp = malloc(toReturn.dataSize);
 	toReturn.stackP = toReturn.stackBase;
@@ -20,6 +20,8 @@ static void rescaleStack(stack *s)
 		s->allocated /= 2;
 	else if ((float) stackSize > (float) s->allocated * 0.7)
 		s->allocated *= 2;
+	else
+		return;
 	s->stackBase = realloc(s->stackBase, s->allocated * s->dataSize);
 	s->stackP = (char *) s->stackBase + stackSize * s->dataSize;
 }
@@ -46,7 +48,7 @@ void spush(void *data, stack *s)
 
 void *speek(stack s)
 {
-	memcpy(s.temp, s.stackP, s.dataSize);
+	memcpy(s.temp, (char *)s.stackP - s.dataSize, s.dataSize);
 	return s.temp;
 }
 
