@@ -34,8 +34,10 @@ void addNode(tree t, treeDir dir, void *data)
 				t.current->left->parent = t.current;
 				t.current->left->left = NULL;
 				t.current->left->right = NULL;
+				t.current->left->data = malloc(t.dataSize);
 				memcpy(t.current->left->data, data, t.dataSize);
 			}
+			break;
 		case right:
 			if (t.current->right != NULL)
 			{
@@ -48,22 +50,13 @@ void addNode(tree t, treeDir dir, void *data)
 				t.current->right->parent = t.current;
 				t.current->right->left = NULL;
 				t.current->right->right = NULL;
+				t.current->right->data = malloc(t.dataSize);
 				memcpy(t.current->right->data, data, t.dataSize);
 			}
-		case up:
-			if (t.current->parent != NULL)
-			{
-				fprintf(stderr, "ERROR: attempted to add parent node to non-root\n");
-				exit(1);
-			}
-			else
-			{
-				t.current->parent = (treeNode *) malloc(sizeof(treeNode));
-				t.current->parent->left = t.current;
-				t.current->parent->parent = NULL;
-				t.current->parent->right = NULL;
-				memcpy(t.current->parent->data, data, t.dataSize);
-			}
+			break;
+		default:
+			fprintf(stderr,"ERROR: Invalid direction\n");
+			exit(1);
 	}
 }
 
@@ -79,21 +72,35 @@ void step(tree *t, treeDir dir)
 		case up:
 			if (t->current->parent != NULL)
 				t->current = t->current->parent;
+			break;
 		case left:
 			if (t->current->left != NULL)
 				t->current = t->current->left;
+			break;
 		case right:
 			if (t->current->right != NULL)
 				t->current = t->current->right;
+			break;
+		default:
+			fprintf(stderr,"ERROR: Invalid direction\n");
+			exit(1);
 	}
 }
 
 void splice(tree t, treeDir dir, tree splicingOn)
 {
 	if (dir == left && t.current->left == NULL)
+	{
 		t.current->left = splicingOn.root;
+		return;
+	}
 	if (dir == right && t.current->right == NULL)
 		t.current->right = splicingOn.root;
+	else
+	{
+		fprintf(stderr,"ERROR: Attempted to splice tree to non-leaf\n");
+		exit(1);
+	}
 }
 
 void resetToRoot(tree *t)
@@ -110,9 +117,11 @@ void trim(tree *t, treeDir dir)
 		case left:
 			toFree.root = t->current->left;
 			t->current->left = NULL;
+			break;
 		case right:
 			toFree.root = t->current->right;
 			t->current->left = NULL;
+			break;
 		case up:
 			toFree.root = t->root;
 			if (t->current->parent->left == t->current)
@@ -121,7 +130,12 @@ void trim(tree *t, treeDir dir)
 				t->current->parent->right = NULL;
 			t->current->parent = NULL;
 			t->root = t->current;
+			break;
+		default:
+			fprintf(stderr,"ERROR: invalid direction\n");
+			exit(1);
 	}
+	toFree.current = toFree.root;
 	freeTree(toFree);
 }
 
@@ -257,14 +271,17 @@ void freeTree(tree t)
 	{
 		stepToLowestInternal(&t);
 		free(t.current->data);
+		if(t.current->parent)
+		{
+			if (t.current->parent->left == t.current)
+			{
+				t.current->parent->left = NULL;
+			}
+			else
+			{
+				t.current->parent->right = NULL;
+			}
+		}
 		free(t.current);
-		if (t.current->parent->left == t.current)
-		{
-			t.current->parent->left = NULL;
-		}
-		else
-		{
-			t.current->parent->right = NULL;
-		}
 	} while (t.root != t.current);
 }
