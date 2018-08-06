@@ -329,7 +329,7 @@ void breakDownTree(tree expressionTree, char *output)
 		rightOperand = *(symbol *) readNode(expressionTree);
 
 		/*for the atomic expression data, format it and print it to the output*/
-		sprintf(output + outputOffset, "%c=%s%d%s%s%s%d%s;", expressionCount++,
+		sprintf(output + outputOffset, "c%d=%s%d%s%s%s%d%s;", expressionCount++,
 				leftOperand.type == variable ? leftOperand.data.variable : "",
 				leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
 				operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
