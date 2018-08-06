@@ -1,8 +1,6 @@
 #ifndef CRCT_LINKEDLIST_H
 #define CRCT_LINKEDLIST_H
 
-#endif //CRCT_LINKEDLIST_H
-
 typedef struct linkedListNode linkedListNode;
 
 struct linkedListNode
@@ -42,3 +40,5 @@ void llToArray(linkedList,void *array);
 static void freeHelper(linkedListNode *);
 
 void freell(linkedList);
+
+#endif //CRCT_LINKEDLIST_H

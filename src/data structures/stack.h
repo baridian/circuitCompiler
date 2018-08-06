@@ -1,8 +1,6 @@
 #ifndef CRCT_STACK_H
 #define CRCT_STACK_H
 
-#endif //CRCT_STACK_H
-
 static const START_SIZE = 4;
 
 typedef struct stack
@@ -27,3 +25,5 @@ void *speek(stack);
 void frees(stack);
 
 int stackSize(stack);
+
+#endif //CRCT_STACK_H

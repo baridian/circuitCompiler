@@ -3,8 +3,6 @@
 #ifndef CRCT_TREE_H
 #define CRCT_TREE_H
 
-#endif //CRCT_TREE_H
-
 typedef struct treeNode treeNode;
 
 struct treeNode
@@ -32,8 +30,8 @@ typedef enum treeNodeType
 	root, dualInternal, leftInternal, rightInternal, leaf
 } treeNodeType;
 
-
 tree newTree(int elementSize, void *rootData);
+
 
 void addNode(tree, treeDir, void *data);
 
@@ -66,3 +64,5 @@ void resetToRoot(tree *);
 treeDir stepUpAndGetStepToPrevious(tree *);
 
 void freeTree(tree);
+
+#endif //CRCT_TREE_H

@@ -6,15 +6,16 @@
 
 int llLength(linkedList list)
 {
-	int i;
+	int i = 0;
 	linkedListNode *currentNode = list.head;
-	for (i = 1; currentNode = currentNode->next; i++);
+	if(currentNode)
+		for (i = 1; currentNode = currentNode->next; i++);
 	return i;
 }
 
 static void negativeIndexWrap(linkedList list, int *index)
 {
-	*index = *index >= 0 ? *index : llLength(list) + *index;
+	*index = *index >= 0 ? *index : (llLength(list) > 0 ? llLength(list) + *index : 0);
 }
 
 void llInsert(linkedList *list, int index, void *data)
@@ -96,12 +97,22 @@ void *llread(linkedList list, int index)
 void llAppend(linkedList *list, void *data)
 {
 	linkedListNode *currentNode = list->head;
-	while (currentNode->next != NULL)
-		currentNode = currentNode->next;
-	currentNode->next = (linkedListNode *) malloc(sizeof(linkedListNode));
-	currentNode->next->next = NULL;
-	currentNode->next->data = malloc(list->dataSize);
-	memcpy(currentNode->next->data, data, list->dataSize);
+	if(currentNode)
+	{
+		while (currentNode->next != NULL)
+			currentNode = currentNode->next;
+		currentNode->next = (linkedListNode *) malloc(sizeof(linkedListNode));
+		currentNode->next->next = NULL;
+		currentNode->next->data = malloc(list->dataSize);
+		memcpy(currentNode->next->data, data, list->dataSize);
+	}
+	else
+	{
+		list->head = (linkedListNode *) malloc(sizeof(linkedListNode));
+		list->head->next = NULL;
+		list->head->data = malloc(list->dataSize);
+		memcpy(list->head->data,data,list->dataSize);
+	}
 }
 
 void llInsertList(linkedList *list, int index, linkedList toInsert)
@@ -110,9 +121,10 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
 	linkedListNode *currentNode = list->head;
 	linkedListNode *lastNode = toInsert.head;
 	linkedListNode *temp;
-	currentNode->next = toInsert.head;
 	while (lastNode->next != NULL)
+	{
 		lastNode = lastNode->next;
+	}
 	negativeIndexWrap(*list, &index);
 	if (list->dataSize != toInsert.dataSize)
 	{
@@ -124,7 +136,9 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
 		for (i = 1; i < index; i++)
 		{
 			if (currentNode != NULL)
+			{
 				currentNode = currentNode->next;
+			}
 			else
 			{
 				fprintf(stderr, "ERROR: linked list out of bounds exception\n");
@@ -132,6 +146,7 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
 			}
 		}
 		temp = currentNode->next->next;
+		currentNode->next = toInsert.head;
 		lastNode->next = temp;
 	}
 	else
@@ -145,6 +160,13 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
 static int voidcmpr(void *a, void *b, int length)
 {
 	int i;
+	if(a == NULL)
+	{
+		if(b == NULL)
+			return 1;
+		else
+			return 0;
+	}
 	for (i = 0; i < length; i++)
 	{
 		if (*((char *) a) == *((char *) b))
@@ -163,32 +185,51 @@ int llMatch(linkedList within, linkedList target)
 {
 	linkedListNode *currentNode = within.head;
 	linkedListNode *targetComparisonNode = target.head;
+	linkedListNode *recallTo;
+	int noMatch;
 	int i = 0;
-	if (within.dataSize != target.dataSize)
-		return 0;
-	while (currentNode != NULL)
+	while(currentNode != NULL) /*move through whole linked list*/
 	{
-		if (voidcmpr(currentNode->data, targetComparisonNode->data, within.dataSize))
+		if(voidcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)); /*if first symbols match*/
 		{
-			return i;
+			recallTo = currentNode; /*set recall point*/
+			noMatch = 0; /*set flag*/
+			while(currentNode != NULL && targetComparisonNode != NULL) /*while match data and within not exhausted*/
+			{
+				if(voidcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)) /*if next symbols match continue*/
+				{
+					currentNode = currentNode->next;
+					targetComparisonNode = targetComparisonNode->next;
+				}
+				else /*if they don't match set flag and exit*/
+				{
+					noMatch = 1;
+					break;
+				}
+				if(currentNode == NULL && targetComparisonNode != NULL) /*if within exhausted but not at end of match data*/
+				{
+					noMatch = 1; /*set flag and exit*/
+					break;
+				}
+			}
+			currentNode = recallTo; /*return to recall point*/
+			if(!noMatch) /*if flag not set return index*/
+				return i;
 		}
-		else
-		{
-			currentNode = currentNode->next;
-			targetComparisonNode = targetComparisonNode->next;
-			i++;
-		}
+		currentNode = currentNode->next; /*move to next symbol in within*/
+		i++;/*increment index*/
 	}
-	return -1;
+	return -1; /*return -1 if not found*/
 }
 
 linkedList arrayToll(void *array, int dataSize, int length)
 {
 	linkedList toReturn;
 	int i;
+	toReturn.head = NULL;
 	toReturn.dataSize = (unsigned) dataSize;
 	for (i = 0; i < length; i++)
-		llInsert(&toReturn, -1, (char *) array + length * dataSize);
+		llAppend(&toReturn, (char *) array + i * dataSize);
 	return toReturn;
 }
 
@@ -210,4 +251,5 @@ static void freeHelper(linkedListNode *start)
 void freell(linkedList list)
 {
 	freeHelper(list.head);
+	list.head = NULL;
 }

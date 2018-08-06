@@ -380,6 +380,6 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 
 int main()
 {
-	printf("Hello, World!\n");
+
 	return 0;
 }
