@@ -363,7 +363,7 @@ void breakDownTree(tree expressionTree, char *output)
 		/*create node for the variable assigned to the atomic expression*/
 		newSymbol.type = variable;
 		newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
-		sprintf(newSymbol.data.variable, "c%d", expressionCount);
+		sprintf(newSymbol.data.variable, "c%d", expressionCount - 1);
 
 		/*free the old atomic expression*/
 		if (leftOperand.type == variable)
@@ -373,14 +373,18 @@ void breakDownTree(tree expressionTree, char *output)
 		step(&expressionTree, up);
 		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
 		/*if this is not the final assignment put variable in place of old atomic expression, else free*/
-		if (!isRoot(expressionTree))
+		if (step(&expressionTree,directionToTrim),currentNodeType(expressionTree) != leaf)
 		{
+			step(&expressionTree,up);
 			trim(&expressionTree, directionToTrim);
 			addNode(expressionTree, directionToTrim, &newSymbol);
 		}
 		else
+		{
 			freeTree(expressionTree);
-		while (output[outputOffset++]);
+			break;
+		}
+		while (output[++outputOffset]);
 		/*reset to root and start again*/
 		resetToRoot(&expressionTree);
 	}
@@ -420,36 +424,18 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	llToArray(symbolicList, symbolicString);
 	freell(charString);
 	freell(symbolicList);
-	printSymbolicString(symbolicString, length);
 	changeToPostFix(symbolicString, &length, opTable, tableLength);
-	printSymbolicString(symbolicString, length);
-	free(symbolicString);
 	generateTree(symbolicString, length, &expressionTree);
+	free(symbolicString);
 	breakDownTree(expressionTree, output);
 }
 
 int main()
 {
-	char output[300];
+	char output[300] = { '\0' };
 	char *opTable[] = {"**", "*,/", "+,-", "(,)"};
 	int tableLength = 4;
-	convertExpression("d1*d2+(d3-d4/5)-18", output, opTable, tableLength);
+	convertExpression("d1*d2+(d3-d4/5)-18*3", output, opTable, tableLength);
+	printf("%s",output);
 	return 0;
 }
-
-/* d1			d1
- * *	*		d1
- * d2	*		d1 d2
- * +	+		d1 d2 *
- * (	(+		d1 d2 *
- * d3	(+		d1 d2 * d3
- * -	-(+		d1 d2 * d3
- * d4	-(+ 	d1 d2 * d3 d4
- * /	/-(+	d1 d2 * d3 d4
- * 5	/-(+	d1 d2 * d3 d4 5
- * )	+		d1 d2 * d3 d4 5 / -
- * -	-		d1 d2 * d3 d4 5 / - +
- * 18	-		d1 d2 * d3 d4 5 / - + 18
- * 				d1 d2 * d3 d4 5 / - + 18 -
- *
- */

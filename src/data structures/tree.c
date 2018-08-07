@@ -92,10 +92,14 @@ void splice(tree t, treeDir dir, tree splicingOn)
 	if (dir == left && t.current->left == NULL)
 	{
 		t.current->left = splicingOn.root;
+		splicingOn.root->parent = t.current;
 		return;
 	}
 	if (dir == right && t.current->right == NULL)
+	{
 		t.current->right = splicingOn.root;
+		splicingOn.root->parent = t.current;
+	}
 	else
 	{
 		fprintf(stderr,"ERROR: Attempted to splice tree to non-leaf\n");
@@ -120,7 +124,7 @@ void trim(tree *t, treeDir dir)
 			break;
 		case right:
 			toFree.root = t->current->right;
-			t->current->left = NULL;
+			t->current->right = NULL;
 			break;
 		case up:
 			toFree.root = t->root;
@@ -135,6 +139,7 @@ void trim(tree *t, treeDir dir)
 			fprintf(stderr,"ERROR: invalid direction\n");
 			exit(1);
 	}
+	toFree.root->parent = NULL;
 	toFree.current = toFree.root;
 	freeTree(toFree);
 }
@@ -216,6 +221,8 @@ static void stepRightUntilCanStepLeft(tree *t, int *level, int *deepest, treeNod
 
 static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t, stack *path, int *level)
 {
+	treeDir toPush = right;
+	int firstTime = 1;
 	if (currentNodeType(*t) == leaf && !isRoot(*t))
 	{
 		while (stackSize(*path) > 0 && *(treeNodeType *) speek(*path) == right)
@@ -223,12 +230,19 @@ static void stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(tree *t, stack *path, int
 			(*level)--;
 			step(t, up);
 			if (currentNodeType(*t) == dualInternal)
-				spop(path);
+			{
+				if (firstTime)
+					firstTime = 0;
+				else
+					spop(path);
+			}
 		}
 		if (stackSize(*path) > 0)
 		{
 			(*level)++;
 			step(t, right);
+			spop(path);
+			spush(&toPush,path);
 		}
 	}
 }
@@ -251,7 +265,7 @@ void stepToLowestInternal(tree *t)
 		stepRightUntilCanStepLeft(t, &current, &deepest, &deepestNode);
 
 		stepUpAndIntoFirstUnvisitedRightNodeIfLeaf(t, &path, &current);
-	} while (stackSize(path) != 0);
+	} while (stackSize(path) > 0);
 	frees(path);
 	t->current = deepestNode;
 }
