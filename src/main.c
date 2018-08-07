@@ -35,6 +35,7 @@ int isOperator(char first, char second, char *opTable[], int tableLength)
 				{
 					if (second == opTable[i][j + 1])
 						return 1;
+					j++;
 				}
 				else
 					return 1;
@@ -92,7 +93,10 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 			start.type = operator;
 			start.data.operand[0] = first;
 			if (isDoubleCharOperator(first, second, opTable, tableLength))
+			{
 				start.data.operand[1] = second;
+				inputOffset++;
+			}
 			else
 				start.data.operand[1] = '\0';
 			start.data.operand[2] = '\0';
@@ -106,10 +110,8 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 		}
 		else if (isLiteral(first))
 		{
-			literalVal = 0;
-			for (; isLiteral(first); inputOffset++)
+			for (literalVal = 0; first = *(char *) llread(input, inputOffset), isLiteral(first); inputOffset++)
 			{
-				first = *(char *) llread(input, inputOffset);
 				literalVal *= 10;
 				literalVal += first - '0';
 			}
@@ -122,6 +124,10 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 				toReturn = arrayToll(&start, sizeof(symbol), 1);
 				initialized = 1;
 			}
+			if (first != '\0')
+				inputOffset--;
+			else
+				break;
 		}
 		else
 		{
@@ -133,13 +139,12 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 					second = *(char *) llread(input, inputOffset + 1);
 				llAppend(&variableName, &first);
 				inputOffset++;
-			}
-			while( !isOperator(first, second, opTable, tableLength) && inputOffset < llLength(input));
+			} while (!isOperator(first, second, opTable, tableLength) && inputOffset + 1 < llLength(input));
 			llErase(&variableName, 0);
-			llErase(&variableName,-1);
+			if (second != '\0')
+				llErase(&variableName, -1);
 			first = '\0';
-			llAppend(&variableName,&first);
-			inputOffset--;
+			llAppend(&variableName, &first);
 			start.type = variable;
 			start.data.variable = (char *) malloc(sizeof(char) * llLength(variableName));
 			llToArray(variableName, start.data.variable);
@@ -151,11 +156,16 @@ linkedList generateSymbolicList(linkedList input, char *opTable[], int tableLeng
 				toReturn = arrayToll(&start, sizeof(symbol), 1);
 				initialized = 1;
 			}
+			if (second != '\0')
+				inputOffset -= 2;
+			else
+				break;
 		}
 	}
 	return toReturn;
 }
 
+/*returns positive if a has a higher precedence, 0 if equal, negative if b has higher*/
 int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 {
 	int i, j, aLevel, bLevel;
@@ -185,6 +195,7 @@ int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
 					else
 						bLevel = i;
 				}
+				j++;
 			}
 		}
 	}
@@ -197,22 +208,28 @@ int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength)
  * then the current operator is pushed on. When a right parenthesis is encountered, all the symbols are popped off
  * and appended to the output except the left parenthesis, which is popped off but not appended.
  * When the input buffer is exhausted, all remaining operators on the stack are popped off and appended. If a parenthesis
- * is encountered, an error is thrown.
+ * is encountered during this stage, an error is thrown.
  */
-void changeToPostFix(symbol array[], int length, char *opTable[], int tableLength)
+void changeToPostFix(symbol array[], int *length, char *opTable[], int tableLength)
 {
-	stack symbolStack = newStack(sizeof(symbol));
-	int tempCounter = 0;
+	stack symbolStack = newStack(sizeof(symbol));;
+	int tempCounter;
+	int skip = 1;
 	int outputCounter = 0;
-	symbol *temp = (symbol *) malloc(sizeof(symbol) * length);
+	int parenthesisCount = 0;
+	symbol *temp = (symbol *) malloc(sizeof(symbol) * *length);
 	symbol poppedSymbol;
-	memcpy(temp, array, sizeof(symbol) * length);
-	for (tempCounter = 0; tempCounter < length; tempCounter++)
+	memcpy(temp, array, sizeof(symbol) * *length);
+	for (tempCounter = 0; tempCounter < *length; tempCounter++)
 	{
 		if (temp[tempCounter].type == operator)
 		{
-			poppedSymbol = *(symbol *) speek(symbolStack);
-			if (poppedSymbol.data.operand[0] == ')')
+			if (stackSize(symbolStack) > 0)
+			{
+				poppedSymbol = *(symbol *) speek(symbolStack);
+				skip = 0;
+			}
+			if (temp[tempCounter].data.operand[0] == ')' && !skip)
 			{
 				/*pop until opening parenthesis found*/
 				while (stackSize(symbolStack) > 0 && poppedSymbol.data.operand[0] != '(')
@@ -226,18 +243,20 @@ void changeToPostFix(symbol array[], int length, char *opTable[], int tableLengt
 					fprintf(stderr, "ERROR: opening parenthesis not found");
 					exit(1);
 				}
-				else
-					spop(&symbolStack);
+				spop(&symbolStack);
+				parenthesisCount += 2;
 			}
 			else
 			{
 				/*pop until lower precedence found*/
 				while (stackSize(symbolStack) > 0 &&
-					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) < 1)
+					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) >= 0 &&
+					   poppedSymbol.data.operand[0] != '(')
 				{
 					array[outputCounter++] = poppedSymbol;
 					spop(&symbolStack);
-					poppedSymbol = *(symbol *) speek(symbolStack);
+					if (stackSize(symbolStack) > 0)
+						poppedSymbol = *(symbol *) speek(symbolStack);
 				}
 				spush(temp + tempCounter, &symbolStack);
 			}
@@ -259,6 +278,7 @@ void changeToPostFix(symbol array[], int length, char *opTable[], int tableLengt
 	}
 	free(temp);
 	frees(symbolStack);
+	*length -= parenthesisCount;
 }
 
 /*
@@ -369,22 +389,22 @@ void breakDownTree(tree expressionTree, char *output)
 
 void printSymbolicString(symbol array[], int length)
 {
-	int i=0;
-	for(;i<length;i++)
+	int i = 0;
+	for (; i < length; i++)
 	{
-		switch(array[i].type)
+		switch (array[i].type)
 		{
 			case variable:
-				printf("V:%s ",array[i].data.variable);
+				printf("V:%s ", array[i].data.variable);
 				break;
 			case literal:
-				printf("L:%d ",array[i].data.literal);
+				printf("L:%d ", array[i].data.literal);
 				break;
 			case operator:
-				printf("O:%s ",array[i].data.operand);
+				printf("O:%s ", array[i].data.operand);
 				break;
 			default:
-				fprintf(stderr,"ERROR: Unrecognized type\n");
+				fprintf(stderr, "ERROR: Unrecognized type\n");
 		}
 	}
 	printf("\n");
@@ -392,7 +412,7 @@ void printSymbolicString(symbol array[], int length)
 
 void convertExpression(char *input, char *output, char *opTable[], int tableLength)
 {
-	linkedList charString = arrayToll(input, sizeof(char), sizeof(input));
+	linkedList charString = arrayToll(input, sizeof(char), strlen(input) + 1);
 	linkedList symbolicList = generateSymbolicList(charString, opTable, tableLength);
 	int length = llLength(symbolicList);
 	symbol *symbolicString = (symbol *) malloc(llLength(symbolicList) * sizeof(symbol));
@@ -400,9 +420,9 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 	llToArray(symbolicList, symbolicString);
 	freell(charString);
 	freell(symbolicList);
-	printSymbolicString(symbolicString,length);
-	changeToPostFix(symbolicString, length, opTable, tableLength);
-	printSymbolicString(symbolicString,length);
+	printSymbolicString(symbolicString, length);
+	changeToPostFix(symbolicString, &length, opTable, tableLength);
+	printSymbolicString(symbolicString, length);
 	free(symbolicString);
 	generateTree(symbolicString, length, &expressionTree);
 	breakDownTree(expressionTree, output);
@@ -411,8 +431,25 @@ void convertExpression(char *input, char *output, char *opTable[], int tableLeng
 int main()
 {
 	char output[300];
-	char *opTable[] = {"**", "*,/", "+,-", "("};
+	char *opTable[] = {"**", "*,/", "+,-", "(,)"};
 	int tableLength = 4;
 	convertExpression("d1*d2+(d3-d4/5)-18", output, opTable, tableLength);
 	return 0;
 }
+
+/* d1			d1
+ * *	*		d1
+ * d2	*		d1 d2
+ * +	+		d1 d2 *
+ * (	(+		d1 d2 *
+ * d3	(+		d1 d2 * d3
+ * -	-(+		d1 d2 * d3
+ * d4	-(+ 	d1 d2 * d3 d4
+ * /	/-(+	d1 d2 * d3 d4
+ * 5	/-(+	d1 d2 * d3 d4 5
+ * )	+		d1 d2 * d3 d4 5 / -
+ * -	-		d1 d2 * d3 d4 5 / - +
+ * 18	-		d1 d2 * d3 d4 5 / - + 18
+ * 				d1 d2 * d3 d4 5 / - + 18 -
+ *
+ */
