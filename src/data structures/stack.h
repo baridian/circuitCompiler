@@ -1,7 +1,7 @@
 #ifndef CRCT_STACK_H
 #define CRCT_STACK_H
 
-static const START_SIZE = 4;
+static const int START_SIZE = 4;
 
 typedef struct stack
 {

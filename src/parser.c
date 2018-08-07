@@ -23,8 +23,7 @@ static int isOperator(char first, char second, char *opTable[], int tableLength)
 					if (second == opTable[i][j + 1])
 						return 1;
 					j++;
-				}
-				else
+				} else
 					return 1;
 			}
 		}
@@ -85,8 +84,7 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 			{
 				start.data.operand[1] = second;
 				inputOffset++;
-			}
-			else
+			} else
 				start.data.operand[1] = '\0';
 			start.data.operand[2] = '\0';
 			if (initialized)
@@ -96,8 +94,7 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 				toReturn = arrayToll(&start, sizeof(symbol), 1);
 				initialized = 1;
 			}
-		}
-		else if (isLiteral(first))
+		} else if (isLiteral(first))
 		{
 			for (literalVal = 0; first = *(char *) llread(input, inputOffset), isLiteral(first); inputOffset++)
 			{
@@ -117,8 +114,7 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 				inputOffset--;
 			else
 				break;
-		}
-		else
+		} else
 		{
 			variableName = arrayToll(&first, sizeof(char), 1);
 			do
@@ -137,9 +133,9 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 			start.type = variable;
 			start.data.variable = (char *) malloc(sizeof(char) * llLength(variableName));
 			llToArray(variableName, start.data.variable);
-			if(sscanf(start.data.variable,"%c%d",&tempChar,&tempInt) == 2 && tempChar == AUTO_VAR)
+			if (sscanf(start.data.variable, "%c%d", &tempChar, &tempInt) == 2 && tempChar == AUTO_VAR)
 			{
-				fprintf(stderr,"ERROR: used restricted variable name '%c%d'\n",tempChar,tempInt);
+				fprintf(stderr, "ERROR: used restricted variable name '%c%d'\n", tempChar, tempInt);
 				exit(1);
 			}
 			freell(variableName);
@@ -175,8 +171,7 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 					{
 						if (opTable[i][j + 1] == a.data.operand[1])
 							aLevel = i;
-					}
-					else
+					} else
 						aLevel = i;
 				}
 				if (opTable[i][j] == b.data.operand[0])
@@ -185,11 +180,10 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 					{
 						if (opTable[i][j + 1] == b.data.operand[1])
 							bLevel = i;
-					}
-					else
+					} else
 						bLevel = i;
 				}
-				if(opTable[i][j+1] != ',' && opTable[i][j+1] != '\0')
+				if (opTable[i][j + 1] != ',' && opTable[i][j + 1] != '\0')
 					j++;
 			}
 		}
@@ -240,8 +234,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 				}
 				spop(&symbolStack);
 				parenthesisCount += 2;
-			}
-			else
+			} else
 			{
 				/*pop until lower precedence found*/
 				while (stackSize(symbolStack) > 0 &&
@@ -255,8 +248,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 				}
 				spush(temp + tempCounter, &symbolStack);
 			}
-		}
-		else
+		} else
 		{
 			array[outputCounter++] = temp[tempCounter];
 		}
@@ -300,8 +292,7 @@ static void postfixToTree(symbol symbols[], int length, tree *expressionTree)
 				tempLeft = *(tree *) spop(&treeStack);
 				splice(tempRoot, right, tempRight);
 				splice(tempRoot, left, tempLeft);
-			}
-			else
+			} else
 			{
 				fprintf(stderr, "ERROR: Invalid expression\n");
 				exit(1);
@@ -360,16 +351,35 @@ static int atomizeTree(tree expressionTree, char *output)
 		rightOperand = *(symbol *) readNode(expressionTree);
 
 		/*for the atomic expression data, format it and print it to the output*/
-		sprintf(output + outputOffset, "%c%d=%s%d%s%s%s%d%s;", AUTO_VAR,expressionCount++,
-				leftOperand.type == variable ? leftOperand.data.variable : "",
-				leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
-				operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
-				rightOperand.type == literal ? rightOperand.data.literal : 1, rightOperand.type == literal ? "" : "\b");
+		if (operator.data.operand[0] != '=')
+		{
+			if(expressionCount < 0)
+				expressionCount *= -1;
+			sprintf(output + outputOffset, "%c%d=%s%d%s%s%s%d%s;", AUTO_VAR, expressionCount++,
+					leftOperand.type == variable ? leftOperand.data.variable : "",
+					leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
+					operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
+					rightOperand.type == literal ? rightOperand.data.literal : 1,
+					rightOperand.type == literal ? "" : "\b");
 
-		/*create node for the variable assigned to the atomic expression*/
-		newSymbol.type = variable;
-		newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
-		sprintf(newSymbol.data.variable, "%c%d",AUTO_VAR, expressionCount - 1);
+			/*create node for the variable assigned to the atomic expression*/
+			newSymbol.type = variable;
+			newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
+			sprintf(newSymbol.data.variable, "%c%d", AUTO_VAR, expressionCount - 1);
+		} else
+		{
+			if (leftOperand.type != variable)
+			{
+				fprintf(stderr, "attempted to assign value to literal\n");
+				exit(1);
+			}
+			sprintf(output + outputOffset, "%s=%d%s%s;", leftOperand.data.variable,
+					rightOperand.type == literal ? rightOperand.data.literal : 1,
+					rightOperand.type == literal ? "" : "\b",
+					rightOperand.type == variable ? rightOperand.data.variable : "");
+			if(expressionCount > 0)
+				expressionCount *= -1;
+		}
 
 		/*free the old atomic expression*/
 		if (leftOperand.type == variable)
@@ -384,8 +394,7 @@ static int atomizeTree(tree expressionTree, char *output)
 			step(&expressionTree, up);
 			trim(&expressionTree, directionToTrim);
 			addNode(expressionTree, directionToTrim, &newSymbol);
-		}
-		else
+		} else
 		{
 			freeTree(expressionTree);
 			break;
@@ -395,7 +404,7 @@ static int atomizeTree(tree expressionTree, char *output)
 		resetToRoot(&expressionTree);
 	}
 	parseBackspaces(output);
-	return outputOffset;
+	return expressionCount < 0 ? -1 : expressionCount;
 }
 
 
