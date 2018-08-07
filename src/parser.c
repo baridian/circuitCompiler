@@ -189,7 +189,8 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 					else
 						bLevel = i;
 				}
-				j++;
+				if(opTable[i][j+1] != ',' && opTable[i][j+1] != '\0')
+					j++;
 			}
 		}
 	}
@@ -206,7 +207,7 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
  */
 static void infixToPostfix(symbol array[], int *length, char *opTable[], int tableLength)
 {
-	stack symbolStack = newStack(sizeof(symbol));;
+	stack symbolStack = newStack(sizeof(symbol));
 	int tempCounter;
 	int skip = 1;
 	int outputCounter = 0;
@@ -244,8 +245,8 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 			{
 				/*pop until lower precedence found*/
 				while (stackSize(symbolStack) > 0 &&
-					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) >= 0 &&
-					   poppedSymbol.data.operand[0] != '(')
+					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) <= 0 &&
+					   poppedSymbol.data.operand[0] != '(' && temp[tempCounter].data.operand[0] != '(')
 				{
 					array[outputCounter++] = poppedSymbol;
 					spop(&symbolStack);
@@ -397,6 +398,30 @@ static int atomizeTree(tree expressionTree, char *output)
 	return outputOffset;
 }
 
+void printSymbolicString(symbol array[], int length)
+{
+	int i = 0;
+	for (; i < length; i++)
+	{
+		switch (array[i].type)
+		{
+			case variable:
+				printf("V:%s ", array[i].data.variable);
+				break;
+			case literal:
+				printf("L:%d ", array[i].data.literal);
+				break;
+			case operator:
+				printf("O:%s ", array[i].data.operand);
+				break;
+			default:
+				fprintf(stderr, "ERROR: Unrecognized type\n");
+		}
+	}
+	printf("\n");
+}
+
+
 /*
  * converts a complex expression character string into a series of atomic expressions in a character string.
  * The variable containing the value equal to the result of the original complex expression is c#,
@@ -412,7 +437,9 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	freell(charList);
 	llToArray(symbolicList, symbols);
 	freell(symbolicList);
+	printSymbolicString(symbols,length);
 	infixToPostfix(symbols, &length, opTable, tableLength);
+	printSymbolicString(symbols, length);
 	postfixToTree(symbols, length, &expressionTree);
 	free(symbols);
 	return atomizeTree(expressionTree, output);
