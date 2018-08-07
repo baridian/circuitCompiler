@@ -250,6 +250,7 @@ static void freeHelper(linkedListNode *start)
 
 void freell(linkedList list)
 {
-	freeHelper(list.head);
+	if(list.head != NULL)
+		freeHelper(list.head);
 	list.head = NULL;
 }
