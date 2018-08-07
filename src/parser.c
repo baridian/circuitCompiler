@@ -398,29 +398,6 @@ static int atomizeTree(tree expressionTree, char *output)
 	return outputOffset;
 }
 
-void printSymbolicString(symbol array[], int length)
-{
-	int i = 0;
-	for (; i < length; i++)
-	{
-		switch (array[i].type)
-		{
-			case variable:
-				printf("V:%s ", array[i].data.variable);
-				break;
-			case literal:
-				printf("L:%d ", array[i].data.literal);
-				break;
-			case operator:
-				printf("O:%s ", array[i].data.operand);
-				break;
-			default:
-				fprintf(stderr, "ERROR: Unrecognized type\n");
-		}
-	}
-	printf("\n");
-}
-
 
 /*
  * converts a complex expression character string into a series of atomic expressions in a character string.
@@ -437,9 +414,7 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	freell(charList);
 	llToArray(symbolicList, symbols);
 	freell(symbolicList);
-	printSymbolicString(symbols,length);
 	infixToPostfix(symbols, &length, opTable, tableLength);
-	printSymbolicString(symbols, length);
 	postfixToTree(symbols, length, &expressionTree);
 	free(symbols);
 	return atomizeTree(expressionTree, output);
