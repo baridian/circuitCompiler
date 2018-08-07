@@ -297,12 +297,17 @@ void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 	for (symbolOffset = 0; symbolOffset < length; symbolOffset++)
 	{
 		tempRoot = newTree(sizeof(symbol), symbolicString + symbolOffset);
-		if (symbolicString[symbolOffset].type == operator)
+		if (symbolicString[symbolOffset].type == operator && stackSize(treeStack) >= 2)
 		{
 			tempRight = *(tree *) spop(&treeStack);
 			tempLeft = *(tree *) spop(&treeStack);
 			splice(tempRoot, right, tempRight);
 			splice(tempRoot, left, tempLeft);
+		}
+		else
+		{
+			fprintf(stderr,"ERROR: Invalid expression\n");
+			exit(1);
 		}
 		spush(&tempRoot, &treeStack);
 	}
@@ -391,29 +396,6 @@ void breakDownTree(tree expressionTree, char *output)
 	parseBackspaces(output);
 }
 
-void printSymbolicString(symbol array[], int length)
-{
-	int i = 0;
-	for (; i < length; i++)
-	{
-		switch (array[i].type)
-		{
-			case variable:
-				printf("V:%s ", array[i].data.variable);
-				break;
-			case literal:
-				printf("L:%d ", array[i].data.literal);
-				break;
-			case operator:
-				printf("O:%s ", array[i].data.operand);
-				break;
-			default:
-				fprintf(stderr, "ERROR: Unrecognized type\n");
-		}
-	}
-	printf("\n");
-}
-
 void convertExpression(char *input, char *output, char *opTable[], int tableLength)
 {
 	linkedList charString = arrayToll(input, sizeof(char), strlen(input) + 1);
@@ -435,7 +417,7 @@ int main()
 	char output[300] = { '\0' };
 	char *opTable[] = {"**", "*,/", "+,-", "(,)"};
 	int tableLength = 4;
-	convertExpression("d1*d2+(d3-d4/5)-18*3", output, opTable, tableLength);
+	convertExpression("d1/d2+(d3-d4/5)+-18*3", output, opTable, tableLength);
 	printf("%s",output);
 	return 0;
 }
