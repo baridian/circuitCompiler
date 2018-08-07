@@ -297,17 +297,20 @@ void generateTree(symbol symbolicString[], int length, tree *expressionTree)
 	for (symbolOffset = 0; symbolOffset < length; symbolOffset++)
 	{
 		tempRoot = newTree(sizeof(symbol), symbolicString + symbolOffset);
-		if (symbolicString[symbolOffset].type == operator && stackSize(treeStack) >= 2)
+		if (symbolicString[symbolOffset].type == operator)
 		{
-			tempRight = *(tree *) spop(&treeStack);
-			tempLeft = *(tree *) spop(&treeStack);
-			splice(tempRoot, right, tempRight);
-			splice(tempRoot, left, tempLeft);
-		}
-		else
-		{
-			fprintf(stderr,"ERROR: Invalid expression\n");
-			exit(1);
+			if(stackSize(treeStack) >= 2)
+			{
+				tempRight = *(tree *) spop(&treeStack);
+				tempLeft = *(tree *) spop(&treeStack);
+				splice(tempRoot, right, tempRight);
+				splice(tempRoot, left, tempLeft);
+			}
+			else
+			{
+				fprintf(stderr,"ERROR: Invalid expression\n");
+				exit(1);
+			}
 		}
 		spush(&tempRoot, &treeStack);
 	}
@@ -417,7 +420,7 @@ int main()
 	char output[300] = { '\0' };
 	char *opTable[] = {"**", "*,/", "+,-", "(,)"};
 	int tableLength = 4;
-	convertExpression("d1/d2+(d3-d4/5)+-18*3", output, opTable, tableLength);
+	convertExpression("d1/d2+(d3-d4/5)+18*3", output, opTable, tableLength);
 	printf("%s",output);
 	return 0;
 }
