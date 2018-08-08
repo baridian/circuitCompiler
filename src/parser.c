@@ -73,6 +73,8 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 	for (inputOffset = 0; inputOffset < llLength(input); inputOffset++)
 	{
 		first = *(char *) llread(input, inputOffset);
+		if(!first)
+			break;
 		if (inputOffset != llLength(input) - 1)
 			second = *(char *) llread(input, inputOffset + 1);
 		else
@@ -197,6 +199,29 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 	return bLevel - aLevel;
 }
 
+static void autoWrap(symbol array[], int *length)
+{
+	linkedList symbolList = arrayToll(array,sizeof(symbol),*length);
+	int i;
+	symbol toInsert;
+	toInsert.type = operator;
+	toInsert.data.operand[1] = '\0';
+	for(i=0;i<llLength(symbolList);i++)
+	{
+		if((*(symbol *)llread(symbolList,i)).data.operand[0] == '=')
+		{
+			toInsert.data.operand[0] = '(';
+			llInsert(&symbolList,i-1,&toInsert);
+			toInsert.data.operand[0] = ')';
+			llAppend(&symbolList,&toInsert);
+			*length += 2;
+			i++;
+		}
+	}
+	llToArray(symbolList,array);
+	freell(symbolList);
+}
+
 /*
  * if symbol or literal encountered, goes straight to output buffer. If operator encountered,
  * operators are popped off and appended to the output until a operator of lower precedence is found,
@@ -214,6 +239,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 	int parenthesisCount = 0;
 	symbol *temp = (symbol *) malloc(sizeof(symbol) * *length);
 	symbol poppedSymbol;
+	autoWrap(array,length);
 	memcpy(temp, array, sizeof(symbol) * *length);
 	for (tempCounter = 0; tempCounter < *length; tempCounter++)
 	{
@@ -398,12 +424,26 @@ static int atomizeTree(tree expressionTree, expression **output)
 		else
 		{
 			llAppend(&expressions,&newExpression);
-			expressionCount++;
+			if(!newExpression.isTrivial)
+				expressionCount++;
 		}
 
-		remember = newSymbol.data.variable;
-		newSymbol.data.variable = malloc((strlen(remember) + 1) * sizeof(char));
-		strcpy(newSymbol.data.variable,remember);
+		if(operator.data.operand[0] == '=')
+		{
+			if (rightOperand.type == variable)
+			{
+				newSymbol.data.variable = (char *) malloc((strlen(rightOperand.data.variable) + 1) * sizeof(char));
+				strcpy(newSymbol.data.variable, rightOperand.data.variable);
+			}
+			else
+				newSymbol = rightOperand;
+		}
+		else
+		{
+			remember = newSymbol.data.variable;
+			newSymbol.data.variable = (char *) malloc((strlen(remember) + 1) * sizeof(char));
+			strcpy(newSymbol.data.variable,remember);
+		}
 
 		step(&expressionTree, up);
 		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
@@ -422,7 +462,8 @@ static int atomizeTree(tree expressionTree, expression **output)
 		/*reset to root and start again*/
 		resetToRoot(&expressionTree);
 	}
-	*output = (expression *)malloc(sizeof(expression) * llLength(expressions));
+	expressionCount = llLength(expressions);
+	*output = (expression *)malloc(sizeof(expression) * expressionCount);
 	llToArray(expressions,*output);
 	freell(expressions);
 	return expressionCount;
