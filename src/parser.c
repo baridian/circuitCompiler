@@ -340,6 +340,7 @@ static void parseBackspaces(char *string)
  */
 static int atomizeTree(tree expressionTree, expression **output)
 {
+	char *remember;
 	int expressionCount = 0;
 	symbol operator;
 	symbol leftOperand;
@@ -367,7 +368,7 @@ static int atomizeTree(tree expressionTree, expression **output)
 			/*create node for the variable assigned to the atomic expression*/
 			newSymbol.type = variable;
 			newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
-			sprintf(newSymbol.data.variable, "%c%d", AUTO_VAR, expressionCount - 1);
+			sprintf(newSymbol.data.variable, "%c%d\0", AUTO_VAR, expressionCount);
 			newExpression.isTrivial = 0;
 			newExpression.assignTo = newSymbol;
 			newExpression.leftOperand = leftOperand;
@@ -383,11 +384,12 @@ static int atomizeTree(tree expressionTree, expression **output)
 			}
 			newExpression.isTrivial = 1;
 			newSymbol.type = variable;
-			newSymbol.data.variable = (char *)malloc(strlen(rightOperand.data.variable) + 1);
-			strcpy(newSymbol.data.variable,rightOperand.data.variable);
+			newSymbol.data.variable = (char *)malloc(strlen(leftOperand.data.variable) + 1);
+			strcpy(newSymbol.data.variable,leftOperand.data.variable);
 			newExpression.assignTo = newSymbol;
-			newExpression.leftOperand = leftOperand;
+			newExpression.rightOperand = rightOperand;
 		}
+
 		if(expressionCount == 0)
 		{
 			expressions = arrayToll(&newExpression,sizeof(expression),1);
@@ -398,6 +400,11 @@ static int atomizeTree(tree expressionTree, expression **output)
 			llAppend(&expressions,&newExpression);
 			expressionCount++;
 		}
+
+		remember = newSymbol.data.variable;
+		newSymbol.data.variable = malloc((strlen(remember) + 1) * sizeof(char));
+		strcpy(newSymbol.data.variable,remember);
+
 		step(&expressionTree, up);
 		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
 		/*if this is not the final assignment put variable in place of old atomic expression, else free*/
@@ -446,7 +453,7 @@ static void expressionArrayToString(expression *expressions, int length, char *o
 		}
 		else
 		{
-			sprintf(output + outputOffset, "%s=%d%s%s;", leftOperand.data.variable,
+			sprintf(output + outputOffset, "%s=%d%s%s;", assign.data.variable,
 					rightOperand.type == literal ? rightOperand.data.literal : 1,
 					rightOperand.type == literal ? "" : "\b",
 					rightOperand.type == variable ? rightOperand.data.variable : "");
@@ -462,7 +469,7 @@ static void freeExpressionArray(expression *expressions, int length)
 	for(;i<length;i++)
 	{
 		free(expressions[i].assignTo.data.variable);
-		if(expressions[i].leftOperand.type == variable)
+		if(expressions[i].leftOperand.type == variable && !expressions[i].isTrivial)
 			free(expressions[i].leftOperand.data.variable);
 		if(expressions[i].rightOperand.type == variable)
 			free(expressions[i].rightOperand.data.variable);
