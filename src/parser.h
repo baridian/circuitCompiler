@@ -24,6 +24,15 @@ typedef struct symbol
 	} data;
 } symbol;
 
+typedef struct expression
+{
+	unsigned isTrivial : 1;
+	symbol assignTo;
+	symbol leftOperand;
+	symbol operator;
+	symbol rightOperand;
+} expression;
+
 static const char AUTO_VAR = 'k';
 
 static int isOperator(char first, char second, char *opTable[], int tableLength);
@@ -40,7 +49,11 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 
 static void postfixToTree(symbol symbols[], int length, tree *expressionTree);
 
-static int atomizeTree(tree expressionTree, char *output);
+static int atomizeTree(tree expressionTree, expression **output);
+
+static void expressionArrayToString(expression *expressions, int length, char *output);
+
+static void freeExpressionArray(expression *expressions, int length);
 
 /*
  * converts a complex expression character string into a series of atomic expressions in a character string.

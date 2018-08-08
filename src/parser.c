@@ -338,14 +338,15 @@ static void parseBackspaces(char *string)
 /* breaks down an expression tree into a character string of atomic statements, that when solved will return a value
  * equal to the original expression within the variable c#, with # being the value returned by the function
  */
-static int atomizeTree(tree expressionTree, char *output)
+static int atomizeTree(tree expressionTree, expression **output)
 {
-	int outputOffset = 0;
 	int expressionCount = 0;
 	symbol operator;
 	symbol leftOperand;
 	symbol rightOperand;
 	symbol newSymbol;
+	linkedList expressions;
+	expression newExpression;
 	treeDir directionToTrim;
 	resetToRoot(&expressionTree);
 	while (currentNodeType(expressionTree) == dualInternal) /*while tree is not totally broken down*/
@@ -362,19 +363,16 @@ static int atomizeTree(tree expressionTree, char *output)
 		/*for the atomic expression data, format it and print it to the output*/
 		if (operator.data.operand[0] != '=')
 		{
-			if (expressionCount < 0)
-				expressionCount *= -1;
-			sprintf(output + outputOffset, "%c%d=%s%d%s%s%s%d%s;", AUTO_VAR, expressionCount++,
-					leftOperand.type == variable ? leftOperand.data.variable : "",
-					leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
-					operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
-					rightOperand.type == literal ? rightOperand.data.literal : 1,
-					rightOperand.type == literal ? "" : "\b");
 
 			/*create node for the variable assigned to the atomic expression*/
 			newSymbol.type = variable;
 			newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
 			sprintf(newSymbol.data.variable, "%c%d", AUTO_VAR, expressionCount - 1);
+			newExpression.isTrivial = 0;
+			newExpression.assignTo = newSymbol;
+			newExpression.leftOperand = leftOperand;
+			newExpression.operator = operator;
+			newExpression.rightOperand = rightOperand;
 		}
 		else
 		{
@@ -383,22 +381,23 @@ static int atomizeTree(tree expressionTree, char *output)
 				fprintf(stderr, "attempted to assign value to literal\n");
 				exit(1);
 			}
-			sprintf(output + outputOffset, "%s=%d%s%s;", leftOperand.data.variable,
-					rightOperand.type == literal ? rightOperand.data.literal : 1,
-					rightOperand.type == literal ? "" : "\b",
-					rightOperand.type == variable ? rightOperand.data.variable : "");
-			if (expressionCount > 0)
-				expressionCount *= -1;
+			newExpression.isTrivial = 1;
 			newSymbol.type = variable;
 			newSymbol.data.variable = (char *)malloc(strlen(rightOperand.data.variable) + 1);
 			strcpy(newSymbol.data.variable,rightOperand.data.variable);
+			newExpression.assignTo = newSymbol;
+			newExpression.leftOperand = leftOperand;
 		}
-
-		/*free the old atomic expression*/
-		if (leftOperand.type == variable)
-			free(leftOperand.data.variable);
-		if (rightOperand.type == variable)
-			free(rightOperand.data.variable);
+		if(expressionCount == 0)
+		{
+			expressions = arrayToll(&newExpression,sizeof(expression),1);
+			expressionCount++;
+		}
+		else
+		{
+			llAppend(&expressions,&newExpression);
+			expressionCount++;
+		}
 		step(&expressionTree, up);
 		directionToTrim = stepUpAndGetStepToPrevious(&expressionTree);
 		/*if this is not the final assignment put variable in place of old atomic expression, else free*/
@@ -413,12 +412,62 @@ static int atomizeTree(tree expressionTree, char *output)
 			freeTree(expressionTree);
 			break;
 		}
-		while (output[++outputOffset]);
 		/*reset to root and start again*/
 		resetToRoot(&expressionTree);
 	}
+	*output = (expression *)malloc(sizeof(expression) * llLength(expressions));
+	llToArray(expressions,*output);
+	freell(expressions);
+	return expressionCount;
+}
+
+static void expressionArrayToString(expression *expressions, int length, char *output)
+{
+	int i;
+	int outputOffset = 0;
+	symbol leftOperand;
+	symbol rightOperand;
+	symbol operator;
+	symbol assign;
+	for(i=0;i<length;i++)
+	{
+		leftOperand = expressions[i].leftOperand;
+		rightOperand = expressions[i].rightOperand;
+		operator = expressions[i].operator;
+		assign = expressions[i].assignTo;
+		if (!expressions[i].isTrivial)
+		{
+			sprintf(output + outputOffset, "%s=%s%d%s%s%s%d%s;", assign.data.variable,
+					leftOperand.type == variable ? leftOperand.data.variable : "",
+					leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
+					operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
+					rightOperand.type == literal ? rightOperand.data.literal : 1,
+					rightOperand.type == literal ? "" : "\b");
+		}
+		else
+		{
+			sprintf(output + outputOffset, "%s=%d%s%s;", leftOperand.data.variable,
+					rightOperand.type == literal ? rightOperand.data.literal : 1,
+					rightOperand.type == literal ? "" : "\b",
+					rightOperand.type == variable ? rightOperand.data.variable : "");
+		}
+		while(output[++outputOffset]);
+	}
 	parseBackspaces(output);
-	return expressionCount < 0 ? -1 : expressionCount;
+}
+
+static void freeExpressionArray(expression *expressions, int length)
+{
+	int i=0;
+	for(;i<length;i++)
+	{
+		free(expressions[i].assignTo.data.variable);
+		if(expressions[i].leftOperand.type == variable)
+			free(expressions[i].leftOperand.data.variable);
+		if(expressions[i].rightOperand.type == variable)
+			free(expressions[i].rightOperand.data.variable);
+	}
+	free(expressions);
 }
 
 
@@ -434,11 +483,14 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	int length = llLength(symbolicList);
 	symbol *symbols = (symbol *) malloc(llLength(symbolicList) * sizeof(symbol));
 	tree expressionTree;
+	expression *expressions;
 	freell(charList);
 	llToArray(symbolicList, symbols);
 	freell(symbolicList);
 	infixToPostfix(symbols, &length, opTable, tableLength);
 	postfixToTree(symbols, length, &expressionTree);
-	free(symbols);
-	return atomizeTree(expressionTree, output);
+	length = atomizeTree(expressionTree, &expressions);
+	expressionArrayToString(expressions,length,output);
+	freeExpressionArray(expressions,length);
+	return length;
 }
