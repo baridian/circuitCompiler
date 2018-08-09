@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
+#include "data structures/hashTable.h"
 
 static int isOperator(char first, char second, char *opTable[], int tableLength)
 {
@@ -73,7 +74,7 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 	for (inputOffset = 0; inputOffset < llLength(input); inputOffset++)
 	{
 		first = *(char *) llread(input, inputOffset);
-		if(!first)
+		if (!first)
 			break;
 		if (inputOffset != llLength(input) - 1)
 			second = *(char *) llread(input, inputOffset + 1);
@@ -201,25 +202,25 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 
 static void autoWrap(symbol *array[], int *length)
 {
-	linkedList symbolList = arrayToll(*array,sizeof(symbol),*length);
+	linkedList symbolList = arrayToll(*array, sizeof(symbol), *length);
 	int i;
 	symbol toInsert;
 	toInsert.type = operator;
 	toInsert.data.operand[1] = '\0';
-	for(i=0;i<llLength(symbolList);i++)
+	for (i = 0; i < llLength(symbolList); i++)
 	{
-		if((*(symbol *)llread(symbolList,i)).data.operand[0] == '=')
+		if ((*(symbol *) llread(symbolList, i)).data.operand[0] == '=')
 		{
 			toInsert.data.operand[0] = '(';
-			llInsert(&symbolList,i-1,&toInsert);
+			llInsert(&symbolList, i - 1, &toInsert);
 			toInsert.data.operand[0] = ')';
-			llAppend(&symbolList,&toInsert);
+			llAppend(&symbolList, &toInsert);
 			*length += 2;
 			i++;
 		}
 	}
-	*array = (symbol *)realloc(*array,sizeof(symbol) * *length);
-	llToArray(symbolList,*array);
+	*array = (symbol *) realloc(*array, sizeof(symbol) * *length);
+	llToArray(symbolList, *array);
 	freell(symbolList);
 }
 
@@ -241,7 +242,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 	symbol *temp = (symbol *) malloc(sizeof(symbol) * *length);
 	symbol poppedSymbol;
 	memcpy(temp, array, sizeof(symbol) * *length);
-	autoWrap(&temp,length);
+	autoWrap(&temp, length);
 	for (tempCounter = 0; tempCounter < *length; tempCounter++)
 	{
 		if (temp[tempCounter].type == operator)
@@ -411,25 +412,25 @@ static int atomizeTree(tree expressionTree, expression **output)
 			}
 			newExpression.isTrivial = 1;
 			newSymbol.type = variable;
-			newSymbol.data.variable = (char *)malloc(strlen(leftOperand.data.variable) + 1);
-			strcpy(newSymbol.data.variable,leftOperand.data.variable);
+			newSymbol.data.variable = (char *) malloc(strlen(leftOperand.data.variable) + 1);
+			strcpy(newSymbol.data.variable, leftOperand.data.variable);
 			newExpression.assignTo = newSymbol;
 			newExpression.rightOperand = rightOperand;
 		}
 
-		if(expressionCount == 0)
+		if (expressionCount == 0)
 		{
-			expressions = arrayToll(&newExpression,sizeof(expression),1);
+			expressions = arrayToll(&newExpression, sizeof(expression), 1);
 			expressionCount++;
 		}
 		else
 		{
-			llAppend(&expressions,&newExpression);
-			if(!newExpression.isTrivial)
+			llAppend(&expressions, &newExpression);
+			if (!newExpression.isTrivial)
 				expressionCount++;
 		}
 
-		if(operator.data.operand[0] == '=')
+		if (operator.data.operand[0] == '=')
 		{
 			if (rightOperand.type == variable)
 			{
@@ -443,7 +444,7 @@ static int atomizeTree(tree expressionTree, expression **output)
 		{
 			remember = newSymbol.data.variable;
 			newSymbol.data.variable = (char *) malloc((strlen(remember) + 1) * sizeof(char));
-			strcpy(newSymbol.data.variable,remember);
+			strcpy(newSymbol.data.variable, remember);
 		}
 
 		step(&expressionTree, up);
@@ -464,10 +465,28 @@ static int atomizeTree(tree expressionTree, expression **output)
 		resetToRoot(&expressionTree);
 	}
 	expressionCount = llLength(expressions);
-	*output = (expression *)malloc(sizeof(expression) * expressionCount);
-	llToArray(expressions,*output);
+	*output = (expression *) malloc(sizeof(expression) * expressionCount);
+	llToArray(expressions, *output);
 	freell(expressions);
 	return expressionCount;
+}
+
+static void simplifyExpressionArray(expression expressions[], int *length)
+{
+	hashTable trivialExpressions = newHashTable(STRING_SIZE, sizeof(char *));
+	hashTable toRemove = newHashTable(sizeof(int), sizeof(char *));
+	linkedList expressionList = arrayToll(expressions, sizeof(expression), *length);
+	expression current;
+	char *copy;
+	int i = 0;
+	for(;i < llLength(expressionList);i++)
+	{
+		current = *(expression *)llread(expressionList,i);
+		if(current.isTrivial && current.rightOperand.type == variable)
+		{
+
+		}
+	}
 }
 
 static void expressionArrayToString(expression expressions[], int length, char *output)
@@ -478,7 +497,7 @@ static void expressionArrayToString(expression expressions[], int length, char *
 	symbol rightOperand;
 	symbol operator;
 	symbol assign;
-	for(i=0;i<length;i++)
+	for (i = 0; i < length; i++)
 	{
 		leftOperand = expressions[i].leftOperand;
 		rightOperand = expressions[i].rightOperand;
@@ -500,20 +519,20 @@ static void expressionArrayToString(expression expressions[], int length, char *
 					rightOperand.type == literal ? "" : "\b",
 					rightOperand.type == variable ? rightOperand.data.variable : "");
 		}
-		while(output[++outputOffset]);
+		while (output[++outputOffset]);
 	}
 	parseBackspaces(output);
 }
 
 static void freeExpressionArray(expression *expressions, int length)
 {
-	int i=0;
-	for(;i<length;i++)
+	int i = 0;
+	for (; i < length; i++)
 	{
 		free(expressions[i].assignTo.data.variable);
-		if(expressions[i].leftOperand.type == variable && !expressions[i].isTrivial)
+		if (expressions[i].leftOperand.type == variable && !expressions[i].isTrivial)
 			free(expressions[i].leftOperand.data.variable);
-		if(expressions[i].rightOperand.type == variable)
+		if (expressions[i].rightOperand.type == variable)
 			free(expressions[i].rightOperand.data.variable);
 	}
 	free(expressions);
@@ -539,7 +558,7 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	infixToPostfix(symbols, &length, opTable, tableLength);
 	postfixToTree(symbols, length, &expressionTree);
 	length = atomizeTree(expressionTree, &expressions);
-	expressionArrayToString(expressions,length,output);
-	freeExpressionArray(expressions,length);
+	expressionArrayToString(expressions, length, output);
+	freeExpressionArray(expressions, length);
 	return length;
 }
