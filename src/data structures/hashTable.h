@@ -31,6 +31,8 @@ void *readHash(hashTable, void *key);
 
 void writeHash(hashTable *, void *key, void *value);
 
+int contains(hashTable, void *key);
+
 void freeHashTable(hashTable);
 
 #endif //CRCT_HASHTABLE_H

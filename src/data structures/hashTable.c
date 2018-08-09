@@ -123,6 +123,19 @@ void writeHash(hashTable *table, void *key, void *value)
 	rescaleHash(table);
 }
 
+int contains(hashTable table, void *key)
+{
+	int index = hash(table,key);
+	int start = index;
+	while(table.table[index].isOccupied)
+	{
+		if(memcmpr(table.table[index].key,key,table.keySize))
+			return 1;
+		index = index == table.allocated - 1 ? 0 : index + 1;
+	}
+	return 0;
+}
+
 void freeHashTable(hashTable table)
 {
 	int i = 0;
