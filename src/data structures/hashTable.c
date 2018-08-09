@@ -83,7 +83,7 @@ static void rescaleHash(hashTable *table)
 		oldLength = table->allocated;
 		if(table->indexesUsed > table->allocated * 0.7)
 			table->allocated *= 2;
-		else
+		else if(table->allocated > START_SIZE)
 			table->allocated /= 2;
 		table->table = (hashNode *) malloc(sizeof(hashNode) * table->allocated);
 		for (; i < table->allocated; i++)
