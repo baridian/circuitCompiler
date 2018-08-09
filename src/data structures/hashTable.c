@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "hashTable.h"
 
 static const int START_SIZE = 4;
@@ -101,11 +102,17 @@ static void rescaleHash(hashTable *table)
 void writeHash(hashTable *table, void *key, void *value)
 {
 	int index = hash(*table, key);
+	int start = index;
 	while (table->table[index].isOccupied)
 	{
 		if(memcmpr(table->table[index].key,key,table->keySize))
 			break;
 		index = index == table->allocated - 1 ? 0 : index + 1;
+		if(index == start)
+		{
+			fprintf(stderr,"ERROR: table is full. This should never happen\n");
+			exit(1);
+		}
 	}
 	table->table[index].isOccupied = 1;
 	table->table[index].key = malloc((unsigned) table->keySize);
