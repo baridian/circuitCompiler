@@ -487,13 +487,13 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 			if (!contains(trivialExpressions, current.rightOperand.data.variable))
 			{
 				copy = (char *) malloc((strlen(current.assignTo.data.variable) + 1) * sizeof(char));
-				strcpy(copy,current.assignTo.data.variable);
+				strcpy(copy, current.assignTo.data.variable);
 				writeHash(&trivialExpressions, current.rightOperand.data.variable, &copy);
 			}
 			else
 			{
 				copy = (char *) malloc((strlen(current.rightOperand.data.variable) + 1) * sizeof(char));
-				strcpy(copy,current.rightOperand.data.variable);
+				strcpy(copy, current.rightOperand.data.variable);
 				writeHash(&toRemove, &i, &copy);
 			}
 		}
@@ -507,6 +507,19 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 	for (i = 0; i < llLength(expressionList); i++)
 	{
 		current = *(expression *) llread(expressionList, i);
+		if (current.rightOperand.type == variable && current.isTrivial)
+		{
+			if (contains(trivialExpressions, current.rightOperand.data.variable))
+			{
+				copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
+				if (strcmp(copy, current.assignTo.data.variable) == 0)
+				{
+					llErase(&expressionList, i);
+					i--;
+					continue;
+				}
+			}
+		}
 		if (contains(trivialExpressions, current.assignTo.data.variable))
 		{
 			copy = *(char **) readHash(trivialExpressions, current.assignTo.data.variable);
@@ -515,17 +528,21 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 			llErase(&expressionList, i);
 			llInsert(&expressionList, i, &current);
 		}
-		if(current.rightOperand.type == variable && current.isTrivial)
+		if (current.rightOperand.type == variable && contains(trivialExpressions, current.rightOperand.data.variable))
 		{
-			if(contains(trivialExpressions,current.rightOperand.data.variable))
-			{
-				copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
-				if(strcmp(copy,current.assignTo.data.variable) == 0)
-				{
-					llErase(&expressionList, i);
-					i--;
-				}
-			}
+			copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
+			current.rightOperand.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
+			strcpy(current.rightOperand.data.variable, copy);
+			llErase(&expressionList, i);
+			llInsert(&expressionList, i, &current);
+		}
+		if (current.leftOperand.type == variable && contains(trivialExpressions, current.leftOperand.data.variable))
+		{
+			copy = *(char **) readHash(trivialExpressions, current.leftOperand.data.variable);
+			current.leftOperand.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
+			strcpy(current.leftOperand.data.variable, copy);
+			llErase(&expressionList, i);
+			llInsert(&expressionList, i, &current);
 		}
 	}
 	*length = llLength(expressionList);
