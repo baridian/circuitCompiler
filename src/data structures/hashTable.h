@@ -31,6 +31,8 @@ void *readHash(hashTable, void *key);
 
 void writeHash(hashTable *, void *key, void *value);
 
+void eraseHashNode(hashTable *, void *key);
+
 int contains(hashTable, void *key);
 
 void freeHashTable(hashTable);

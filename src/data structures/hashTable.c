@@ -77,11 +77,14 @@ static void rescaleHash(hashTable *table)
 	int oldLength;
 	int i = 0;
 	int newIndex;
-	if (table->indexesUsed > table->allocated * 0.7)
+	if (table->indexesUsed > table->allocated * 0.7 || table->indexesUsed < table->allocated * 0.7 / 2)
 	{
 		oldTable = table->table;
 		oldLength = table->allocated;
-		table->allocated *= 2;
+		if(table->indexesUsed > table->allocated * 0.7)
+			table->allocated *= 2;
+		else
+			table->allocated /= 2;
 		table->table = (hashNode *) malloc(sizeof(hashNode) * table->allocated);
 		for (; i < table->allocated; i++)
 			table->table[i].isOccupied = 0;
@@ -120,6 +123,28 @@ void writeHash(hashTable *table, void *key, void *value)
 	table->table[index].data = malloc((unsigned) table->valueSize);
 	memcpy(table->table[index].data, value, (unsigned) table->valueSize);
 	table->indexesUsed++;
+	rescaleHash(table);
+}
+
+void eraseHashNode(hashTable *table, void *key)
+{
+	int index = hash(*table, key);
+	int start = index;
+	while (table->table[index].isOccupied)
+	{
+		if(memcmpr(table->table[index].key,key,table->keySize))
+			break;
+		index = index == table->allocated - 1 ? 0 : index + 1;
+		if(index == start)
+		{
+			fprintf(stderr,"ERROR: table is full. This should never happen\n");
+			exit(1);
+		}
+	}
+	table->table[index].isOccupied = 0;
+	free(table->table[index].key);
+	free(table->table[index].data);
+	table->indexesUsed--;
 	rescaleHash(table);
 }
 
