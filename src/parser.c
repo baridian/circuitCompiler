@@ -199,9 +199,9 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 	return bLevel - aLevel;
 }
 
-static void autoWrap(symbol array[], int *length)
+static void autoWrap(symbol *array[], int *length)
 {
-	linkedList symbolList = arrayToll(array,sizeof(symbol),*length);
+	linkedList symbolList = arrayToll(*array,sizeof(symbol),*length);
 	int i;
 	symbol toInsert;
 	toInsert.type = operator;
@@ -218,7 +218,8 @@ static void autoWrap(symbol array[], int *length)
 			i++;
 		}
 	}
-	llToArray(symbolList,array);
+	*array = (symbol *)realloc(*array,sizeof(symbol) * *length);
+	llToArray(symbolList,*array);
 	freell(symbolList);
 }
 
@@ -239,8 +240,8 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 	int parenthesisCount = 0;
 	symbol *temp = (symbol *) malloc(sizeof(symbol) * *length);
 	symbol poppedSymbol;
-	autoWrap(array,length);
 	memcpy(temp, array, sizeof(symbol) * *length);
+	autoWrap(&temp,length);
 	for (tempCounter = 0; tempCounter < *length; tempCounter++)
 	{
 		if (temp[tempCounter].type == operator)

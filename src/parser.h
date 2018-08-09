@@ -45,7 +45,7 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 
 static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLength);
 
-static void autoWrap(symbol array[], int *length);
+static void autoWrap(symbol *array[], int *length);
 
 static void infixToPostfix(symbol array[], int *length, char *opTable[], int tableLength);
 
