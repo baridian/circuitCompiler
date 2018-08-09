@@ -164,11 +164,13 @@ void writeHash(hashTable *table, void *key, void *value)
 
 void eraseHashNode(hashTable *table, void *key)
 {
-	int index = hash(*table, key);
+	int index = table->keySize != STRING_SIZE ? hash(*table,key) : hashString(*table,key);
 	int start = index;
 	while (table->table[index].isOccupied)
 	{
-		if(memcmpr(table->table[index].key,key,table->keySize))
+		if(table->keySize != STRING_SIZE && memcmpr(table->table[index].key,key,table->keySize))
+			break;
+		else if(table->keySize == STRING_SIZE && strcmp(table->table[index].key,key) == 0)
 			break;
 		index = index == table->allocated - 1 ? 0 : index + 1;
 		if(index == start)

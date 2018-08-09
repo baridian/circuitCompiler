@@ -501,7 +501,10 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 	for (i = 0; i < llLength(expressionList); i++)
 	{
 		if (contains(toRemove, &i))
-			eraseHashNode(&trivialExpressions, *(char **) readHash(toRemove, &i));
+		{
+			copy = *(char **) readHash(toRemove, &i);
+			eraseHashNode(&trivialExpressions, copy);
+		}
 	}
 	freeHashTable(toRemove);
 	for (i = 0; i < llLength(expressionList); i++)
