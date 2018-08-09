@@ -77,10 +77,13 @@ void *readHash(hashTable table, void *key)
 	start = index;
 	do
 	{
-		if (table.keySize != STRING_SIZE && memcmpr(key, table.table[index].key, table.keySize))
-			return table.table[index].data;
-		else if(table.keySize == STRING_SIZE && strcmp((char *)table.table[index].key,(char *)key) == 0)
-			return table.table[index].data;
+		if(table.table[index].isOccupied)
+		{
+			if (table.keySize != STRING_SIZE && memcmpr(key, table.table[index].key, table.keySize))
+				return table.table[index].data;
+			else if (table.keySize == STRING_SIZE && strcmp((char *) table.table[index].key, (char *) key) == 0)
+				return table.table[index].data;
+		}
 		index = index == table.allocated - 1 ? 0 : index + 1;
 	} while (table.table[index].isOccupied && index != start);
 	return NULL;
@@ -183,16 +186,8 @@ void eraseHashNode(hashTable *table, void *key)
 
 int contains(hashTable table, void *key)
 {
-	int index = hash(table,key);
-	int start = index;
-	while(table.table[index].isOccupied)
-	{
-		if(table.keySize != STRING_SIZE && memcmpr(table.table[index].key,key,table.keySize))
-			return 1;
-		else if(table.keySize == STRING_SIZE && strcmp(table.table[index].key,key) == 0)
-			return 1;
-		index = index == table.allocated - 1 ? 0 : index + 1;
-	}
+	if(readHash(table,key) != NULL)
+		return 1;
 	return 0;
 }
 

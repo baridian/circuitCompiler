@@ -479,14 +479,59 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 	expression current;
 	char *copy;
 	int i = 0;
-	for(;i < llLength(expressionList);i++)
+	for (; i < llLength(expressionList); i++)
 	{
-		current = *(expression *)llread(expressionList,i);
-		if(current.isTrivial && current.rightOperand.type == variable)
+		current = *(expression *) llread(expressionList, i);
+		if (current.isTrivial && current.rightOperand.type == variable)
 		{
-
+			if (!contains(trivialExpressions, current.rightOperand.data.variable))
+			{
+				copy = (char *) malloc((strlen(current.assignTo.data.variable) + 1) * sizeof(char));
+				strcpy(copy,current.assignTo.data.variable);
+				writeHash(&trivialExpressions, current.rightOperand.data.variable, &copy);
+			}
+			else
+			{
+				copy = (char *) malloc((strlen(current.rightOperand.data.variable) + 1) * sizeof(char));
+				strcpy(copy,current.rightOperand.data.variable);
+				writeHash(&toRemove, &i, &copy);
+			}
 		}
 	}
+	for (i = 0; i < llLength(expressionList); i++)
+	{
+		if (contains(toRemove, &i))
+			eraseHashNode(&trivialExpressions, *(char **) readHash(toRemove, &i));
+	}
+	freeHashTable(toRemove);
+	for (i = 0; i < llLength(expressionList); i++)
+	{
+		current = *(expression *) llread(expressionList, i);
+		if (contains(trivialExpressions, current.assignTo.data.variable))
+		{
+			copy = *(char **) readHash(trivialExpressions, current.assignTo.data.variable);
+			current.assignTo.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
+			strcpy(current.assignTo.data.variable, copy);
+			llErase(&expressionList, i);
+			llInsert(&expressionList, i, &current);
+		}
+		if(current.rightOperand.type == variable && current.isTrivial)
+		{
+			if(contains(trivialExpressions,current.rightOperand.data.variable))
+			{
+				copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
+				if(strcmp(copy,current.assignTo.data.variable) == 0)
+				{
+					llErase(&expressionList, i);
+					i--;
+				}
+			}
+		}
+	}
+	*length = llLength(expressionList);
+	llToArray(expressionList, expressions);
+	freell(expressionList);
+	freeHashTable(trivialExpressions);
 }
 
 static void expressionArrayToString(expression expressions[], int length, char *output)
@@ -507,7 +552,8 @@ static void expressionArrayToString(expression expressions[], int length, char *
 		{
 			sprintf(output + outputOffset, "%s=%s%d%s%s%s%d%s;", assign.data.variable,
 					leftOperand.type == variable ? leftOperand.data.variable : "",
-					leftOperand.type == literal ? leftOperand.data.literal : 1, leftOperand.type == literal ? "" : "\b",
+					leftOperand.type == literal ? leftOperand.data.literal : 1,
+					leftOperand.type == literal ? "" : "\b",
 					operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
 					rightOperand.type == literal ? rightOperand.data.literal : 1,
 					rightOperand.type == literal ? "" : "\b");
@@ -558,6 +604,7 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	infixToPostfix(symbols, &length, opTable, tableLength);
 	postfixToTree(symbols, length, &expressionTree);
 	length = atomizeTree(expressionTree, &expressions);
+	simplifyExpressionArray(expressions, &length);
 	expressionArrayToString(expressions, length, output);
 	freeExpressionArray(expressions, length);
 	return length;
