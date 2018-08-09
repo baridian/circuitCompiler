@@ -10,14 +10,22 @@
 
 static const int START_SIZE = 4;
 
+static unsigned hashString(hashTable table, void *key)
+{
+	char *keyCopy = (char *)key;
+	unsigned toReturn = 0;
+	int i = 0;
+	for(; keyCopy[i];i++)
+		toReturn += keyCopy[i] * pow(31,i);
+	return toReturn % table.allocated;
+}
+
 static unsigned hash(hashTable table, void *key)
 {
 	unsigned toReturn = 0;
 	int i = 0;
 	for (; i < table.keySize; i++)
-	{
 		toReturn += ((char *) key)[i] * pow(31, table.keySize - i - 1);
-	}
 	return toReturn % table.allocated;
 }
 
@@ -60,11 +68,18 @@ static int memcmpr(void *a, void *b, int length)
 
 void *readHash(hashTable table, void *key)
 {
-	int index = hash(table, key);
-	int start = index;
+	int index;
+	int start;
+	if(table.keySize != STRING_SIZE)
+		index = hash(table,key);
+	else
+		index = hashString(table,key);
+	start = index;
 	do
 	{
-		if (memcmpr(key, table.table[index].key, table.keySize))
+		if (table.keySize != STRING_SIZE && memcmpr(key, table.table[index].key, table.keySize))
+			return table.table[index].data;
+		else if(table.keySize == STRING_SIZE && strcmp((char *)table.table[index].key,(char *)key) == 0)
 			return table.table[index].data;
 		index = index == table.allocated - 1 ? 0 : index + 1;
 	} while (table.table[index].isOccupied && index != start);
@@ -92,7 +107,10 @@ static void rescaleHash(hashTable *table)
 		{
 			if (oldTable[i].isOccupied)
 			{
-				newIndex = hash(*table, oldTable[i].key);
+				if(table->keySize != STRING_SIZE)
+					newIndex = hash(*table, oldTable[i].key);
+				else
+					newIndex = hashString(*table,oldTable[i].key);
 				while (table->table[newIndex].isOccupied)
 					newIndex = newIndex == table->allocated - 1 ? 0 : newIndex + 1;
 				table->table[newIndex] = oldTable[i];
@@ -104,11 +122,18 @@ static void rescaleHash(hashTable *table)
 
 void writeHash(hashTable *table, void *key, void *value)
 {
-	int index = hash(*table, key);
-	int start = index;
+	int index;
+	int start;
+	if(table->keySize != STRING_SIZE)
+		index = hash(*table,key);
+	else
+		index = hashString(*table,key);
+	start = index;
 	while (table->table[index].isOccupied)
 	{
-		if(memcmpr(table->table[index].key,key,table->keySize))
+		if(table->keySize != STRING_SIZE && memcmpr(table->table[index].key,key,table->keySize))
+			break;
+		else if(table->keySize == STRING_SIZE && strcmp(table->table[index].key,key) == 0)
 			break;
 		index = index == table->allocated - 1 ? 0 : index + 1;
 		if(index == start)
@@ -118,8 +143,16 @@ void writeHash(hashTable *table, void *key, void *value)
 		}
 	}
 	table->table[index].isOccupied = 1;
-	table->table[index].key = malloc((unsigned) table->keySize);
-	memcpy(table->table[index].key, key, (unsigned) table->keySize);
+	if(table->keySize != STRING_SIZE)
+	{
+		table->table[index].key = malloc((unsigned) table->keySize);
+		memcpy(table->table[index].key, key, (unsigned) table->keySize);
+	}
+	else
+	{
+		table->table[index].key = malloc(strlen(key) + 1);
+		strcpy(table->table[index].key,key);
+	}
 	table->table[index].data = malloc((unsigned) table->valueSize);
 	memcpy(table->table[index].data, value, (unsigned) table->valueSize);
 	table->indexesUsed++;
@@ -154,7 +187,9 @@ int contains(hashTable table, void *key)
 	int start = index;
 	while(table.table[index].isOccupied)
 	{
-		if(memcmpr(table.table[index].key,key,table.keySize))
+		if(table.keySize != STRING_SIZE && memcmpr(table.table[index].key,key,table.keySize))
+			return 1;
+		else if(table.keySize == STRING_SIZE && strcmp(table.table[index].key,key) == 0)
 			return 1;
 		index = index == table.allocated - 1 ? 0 : index + 1;
 	}

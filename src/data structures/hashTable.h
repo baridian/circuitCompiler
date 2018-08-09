@@ -5,6 +5,8 @@
 #ifndef CRCT_HASHTABLE_H
 #define CRCT_HASHTABLE_H
 
+#define STRING_SIZE -1
+
 typedef struct hashNode
 {
 	void *key;
@@ -20,6 +22,8 @@ typedef struct hashTable
 	int indexesUsed;
 	hashNode *table;
 } hashTable;
+
+static unsigned hashString(hashTable,void *);
 
 static unsigned hash(hashTable, void *);
 

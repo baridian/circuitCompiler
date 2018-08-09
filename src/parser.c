@@ -470,7 +470,7 @@ static int atomizeTree(tree expressionTree, expression **output)
 	return expressionCount;
 }
 
-static void expressionArrayToString(expression *expressions, int length, char *output)
+static void expressionArrayToString(expression expressions[], int length, char *output)
 {
 	int i;
 	int outputOffset = 0;

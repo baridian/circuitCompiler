@@ -53,7 +53,9 @@ static void postfixToTree(symbol symbols[], int length, tree *expressionTree);
 
 static int atomizeTree(tree expressionTree, expression **output);
 
-static void expressionArrayToString(expression *expressions, int length, char *output);
+static void simplifyExpressionArray(expression expression[], int *length);
+
+static void expressionArrayToString(expression expressions[], int length, char *output);
 
 static void freeExpressionArray(expression *expressions, int length);
 
