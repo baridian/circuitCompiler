@@ -157,7 +157,7 @@ void llInsertList(linkedList *list, int index, linkedList toInsert)
 	}
 }
 
-static int voidcmpr(void *a, void *b, int length)
+static int memcmpr(void *a, void *b, int length)
 {
 	int i;
 	if(a == NULL)
@@ -190,13 +190,13 @@ int llMatch(linkedList within, linkedList target)
 	int i = 0;
 	while(currentNode != NULL) /*move through whole linked list*/
 	{
-		if(voidcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)); /*if first symbols match*/
+		if(memcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)); /*if first symbols match*/
 		{
 			recallTo = currentNode; /*set recall point*/
 			noMatch = 0; /*set flag*/
 			while(currentNode != NULL && targetComparisonNode != NULL) /*while match data and within not exhausted*/
 			{
-				if(voidcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)) /*if next symbols match continue*/
+				if(memcmpr(currentNode->data,targetComparisonNode->data,within.dataSize)) /*if next symbols match continue*/
 				{
 					currentNode = currentNode->next;
 					targetComparisonNode = targetComparisonNode->next;

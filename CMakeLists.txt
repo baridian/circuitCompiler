@@ -3,4 +3,4 @@ project(crct C)
 
 set(CMAKE_C_STANDARD 90)
 
-add_executable(crct src/main.c "src/data structures/linkedList.c" "src/data structures/linkedList.h" "src/data structures/stack.c" "src/data structures/stack.h" "src/data structures/tree.c" "src/data structures/tree.h" src/parser.c src/parser.h)
+add_executable(crct src/main.c "src/data structures/linkedList.c" "src/data structures/linkedList.h" "src/data structures/stack.c" "src/data structures/stack.h" "src/data structures/tree.c" "src/data structures/tree.h" src/parser.c src/parser.h "src/data structures/hashTable.c" "src/data structures/hashTable.h")
