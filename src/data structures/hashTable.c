@@ -61,20 +61,6 @@ void *readHash(hashTable table, void *key)
 {
 	int index = hash(table, key);
 	int start = index;
-	int i=0;
-	for(;i < table.allocated;i++)
-	{
-		if(i < table.allocated - 1 && table.table[i].isOccupied && table.table[i + 1].isOccupied)
-		{
-			if(memcmpr(table.table[i].key,table.table[i].key,table.keySize))
-				return NULL;
-		}
-	}
-	if(table.table[0].isOccupied && table.table[table.allocated - 1].isOccupied)
-	{
-		if(memcmpr(table.table[0].key,table.table[table.allocated - 1].key,table.keySize))
-			return NULL;
-	}
 	do
 	{
 		if (memcmpr(key, table.table[index].key, table.keySize))
@@ -116,12 +102,17 @@ void writeHash(hashTable *table, void *key, void *value)
 {
 	int index = hash(*table, key);
 	while (table->table[index].isOccupied)
+	{
+		if(memcmpr(table->table[index].key,key,table->keySize))
+			break;
 		index = index == table->allocated - 1 ? 0 : index + 1;
+	}
 	table->table[index].isOccupied = 1;
 	table->table[index].key = malloc((unsigned) table->keySize);
 	memcpy(table->table[index].key, key, (unsigned) table->keySize);
 	table->table[index].data = malloc((unsigned) table->valueSize);
 	memcpy(table->table[index].data, value, (unsigned) table->valueSize);
+	table->indexesUsed++;
 	rescaleHash(table);
 }
 
