@@ -1,11 +1,7 @@
-//
-// Created by ibird on 8/9/2018.
-//
-
 #ifndef CRCT_HASHTABLE_H
 #define CRCT_HASHTABLE_H
 
-#define STRING_SIZE -1
+#define STRING_SIZE (-1)
 
 typedef struct hashNode
 {
