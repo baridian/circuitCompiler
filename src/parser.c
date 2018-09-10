@@ -1,7 +1,3 @@
-//
-// Created by ibird on 8/7/2018.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -75,7 +71,10 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 	{
 		first = *(char *) llread(input, inputOffset);
 		if (!first)
+		{
+			toReturn = arrayToll(NULL,sizeof(symbol),0);
 			break;
+		}
 		if (inputOffset != llLength(input) - 1)
 			second = *(char *) llread(input, inputOffset + 1);
 		else
@@ -83,15 +82,15 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 		if (isOperator(first, second, opTable, tableLength))
 		{
 			start.type = operator;
-			start.data.operand[0] = first;
+			start.data.operator[0] = first;
 			if (isDoubleCharOperator(first, second, opTable, tableLength))
 			{
-				start.data.operand[1] = second;
+				start.data.operator[1] = second;
 				inputOffset++;
 			}
 			else
-				start.data.operand[1] = '\0';
-			start.data.operand[2] = '\0';
+				start.data.operator[1] = '\0';
+			start.data.operator[2] = '\0';
 			if (initialized)
 				llAppend(&toReturn, &start);
 			else
@@ -133,12 +132,15 @@ static linkedList charListToSymbolList(linkedList input, char *opTable[], int ta
 				inputOffset++;
 			} while (!isOperator(first, second, opTable, tableLength) && inputOffset + 1 < llLength(input));
 			llErase(&variableName, 0);
-			if (second != '\0')
+			if (second != '\0' || isOperator(*(char *)llread(variableName,-1),second,opTable,tableLength))
+			{
+				second = first;
 				llErase(&variableName, -1);
+			}
 			first = '\0';
 			llAppend(&variableName, &first);
 			start.type = variable;
-			start.data.variable = (char *) malloc(sizeof(char) * llLength(variableName));
+			start.data.variable = malloc(sizeof(char) * llLength(variableName));
 			llToArray(variableName, start.data.variable);
 			if (sscanf(start.data.variable, "%c%d", &tempChar, &tempInt) == 2 && tempChar == AUTO_VAR)
 			{
@@ -172,21 +174,21 @@ static int comparePrecedence(symbol a, symbol b, char *opTable[], int tableLengt
 		{
 			if (opTable[i][j] != ',')
 			{
-				if (opTable[i][j] == a.data.operand[0])
+				if (opTable[i][j] == a.data.operator[0])
 				{
-					if (a.data.operand[1])
+					if (a.data.operator[1])
 					{
-						if (opTable[i][j + 1] == a.data.operand[1])
+						if (opTable[i][j + 1] == a.data.operator[1])
 							aLevel = i;
 					}
 					else
 						aLevel = i;
 				}
-				if (opTable[i][j] == b.data.operand[0])
+				if (opTable[i][j] == b.data.operator[0])
 				{
-					if (b.data.operand[1])
+					if (b.data.operator[1])
 					{
-						if (opTable[i][j + 1] == b.data.operand[1])
+						if (opTable[i][j + 1] == b.data.operator[1])
 							bLevel = i;
 					}
 					else
@@ -206,14 +208,14 @@ static void autoWrap(symbol *array[], int *length)
 	int i;
 	symbol toInsert;
 	toInsert.type = operator;
-	toInsert.data.operand[1] = '\0';
+	toInsert.data.operator[1] = '\0';
 	for (i = 0; i < llLength(symbolList); i++)
 	{
-		if ((*(symbol *) llread(symbolList, i)).data.operand[0] == '=')
+		if ((*(symbol *) llread(symbolList, i)).data.operator[0] == '=')
 		{
-			toInsert.data.operand[0] = '(';
+			toInsert.data.operator[0] = '(';
 			llInsert(&symbolList, i - 1, &toInsert);
-			toInsert.data.operand[0] = ')';
+			toInsert.data.operator[0] = ')';
 			llAppend(&symbolList, &toInsert);
 			*length += 2;
 			i++;
@@ -239,7 +241,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 	int skip = 1;
 	int outputCounter = 0;
 	int parenthesisCount = 0;
-	symbol *temp = (symbol *) malloc(sizeof(symbol) * *length);
+	symbol *temp = malloc(sizeof(symbol) * *length);
 	symbol poppedSymbol;
 	memcpy(temp, array, sizeof(symbol) * *length);
 	autoWrap(&temp, length);
@@ -252,10 +254,10 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 				poppedSymbol = *(symbol *) speek(symbolStack);
 				skip = 0;
 			}
-			if (temp[tempCounter].data.operand[0] == ')' && !skip)
+			if (temp[tempCounter].data.operator[0] == ')' && !skip)
 			{
 				/*pop until opening parenthesis found*/
-				while (stackSize(symbolStack) > 0 && poppedSymbol.data.operand[0] != '(')
+				while (stackSize(symbolStack) > 0 && poppedSymbol.data.operator[0] != '(')
 				{
 					array[outputCounter++] = poppedSymbol;
 					spop(&symbolStack);
@@ -274,7 +276,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 				/*pop until lower precedence found*/
 				while (stackSize(symbolStack) > 0 &&
 					   comparePrecedence(temp[tempCounter], poppedSymbol, opTable, tableLength) <= 0 &&
-					   poppedSymbol.data.operand[0] != '(' && temp[tempCounter].data.operand[0] != '(')
+					   poppedSymbol.data.operator[0] != '(' && temp[tempCounter].data.operator[0] != '(')
 				{
 					array[outputCounter++] = poppedSymbol;
 					spop(&symbolStack);
@@ -292,7 +294,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 	while (stackSize(symbolStack) > 0) /*clear out stack after symbols end*/
 	{
 		poppedSymbol = *(symbol *) spop(&symbolStack);
-		if (poppedSymbol.data.operand[0] == '(')
+		if (poppedSymbol.data.operator[0] == '(')
 		{
 			fprintf(stderr, "ERROR: unclosed parenthesis\n");
 			exit(1);
@@ -305,7 +307,7 @@ static void infixToPostfix(symbol array[], int *length, char *opTable[], int tab
 }
 
 /*
- * each time a literal or operand is found, push it to the stack as a tree consisting of just the operand root.
+ * each time a literal or operator is found, push it to the stack as a tree consisting of just the operator root.
  * When an operator is found, it pops the two most recent trees off the stack and splices them to a tree with
  * the operator as the root and the two most recent trees as it's children.
  * Repeat until string parsed, if stack != 1, error.
@@ -331,7 +333,7 @@ static void postfixToTree(symbol symbols[], int length, tree *expressionTree)
 			}
 			else
 			{
-				fprintf(stderr, "ERROR: Invalid expression\n");
+				fprintf(stderr, "ERROR: missing rValue\n");
 				exit(1);
 			}
 		}
@@ -339,7 +341,7 @@ static void postfixToTree(symbol symbols[], int length, tree *expressionTree)
 	}
 	if (stackSize(treeStack) != 1)
 	{
-		fprintf(stderr, "ERROR: Invalid expression\n");
+		fprintf(stderr, "ERROR: missing lValue\n");
 		exit(1);
 	}
 	*expressionTree = *(tree *) spop(&treeStack);
@@ -371,8 +373,8 @@ static int atomizeTree(tree expressionTree, expression **output)
 	char *remember;
 	int expressionCount = 0;
 	symbol operator;
-	symbol leftOperand;
-	symbol rightOperand;
+	symbol lValue;
+	symbol rValue;
 	symbol newSymbol;
 	linkedList expressions;
 	expression newExpression;
@@ -384,38 +386,38 @@ static int atomizeTree(tree expressionTree, expression **output)
 		step(&expressionTree, up);
 		operator = *(symbol *) readNode(expressionTree);
 		step(&expressionTree, left);
-		leftOperand = *(symbol *) readNode(expressionTree);
+		lValue = *(symbol *) readNode(expressionTree);
 		step(&expressionTree, up);
 		step(&expressionTree, right);
-		rightOperand = *(symbol *) readNode(expressionTree);
+		rValue = *(symbol *) readNode(expressionTree);
 
 		/*for the atomic expression data, format it and print it to the output*/
-		if (operator.data.operand[0] != '=')
+		if (operator.data.operator[0] != '=')
 		{
 
 			/*create node for the variable assigned to the atomic expression*/
 			newSymbol.type = variable;
-			newSymbol.data.variable = (char *) malloc((unsigned) (2 + expressionCount / 10));
+			newSymbol.data.variable = malloc((unsigned) (2 + expressionCount / 10));
 			sprintf(newSymbol.data.variable, "%c%d\0", AUTO_VAR, expressionCount);
 			newExpression.isTrivial = 0;
 			newExpression.assignTo = newSymbol;
-			newExpression.leftOperand = leftOperand;
+			newExpression.lValue = lValue;
 			newExpression.operator = operator;
-			newExpression.rightOperand = rightOperand;
+			newExpression.rValue = rValue;
 		}
 		else
 		{
-			if (leftOperand.type != variable)
+			if (lValue.type != variable)
 			{
 				fprintf(stderr, "attempted to assign value to literal\n");
 				exit(1);
 			}
 			newExpression.isTrivial = 1;
 			newSymbol.type = variable;
-			newSymbol.data.variable = (char *) malloc(strlen(leftOperand.data.variable) + 1);
-			strcpy(newSymbol.data.variable, leftOperand.data.variable);
+			newSymbol.data.variable = malloc(strlen(lValue.data.variable) + 1);
+			strcpy(newSymbol.data.variable, lValue.data.variable);
 			newExpression.assignTo = newSymbol;
-			newExpression.rightOperand = rightOperand;
+			newExpression.rValue = rValue;
 		}
 
 		if (expressionCount == 0)
@@ -430,20 +432,20 @@ static int atomizeTree(tree expressionTree, expression **output)
 				expressionCount++;
 		}
 
-		if (operator.data.operand[0] == '=')
+		if (operator.data.operator[0] == '=')
 		{
-			if (rightOperand.type == variable)
+			if (rValue.type == variable)
 			{
-				newSymbol.data.variable = (char *) malloc((strlen(rightOperand.data.variable) + 1) * sizeof(char));
-				strcpy(newSymbol.data.variable, rightOperand.data.variable);
+				newSymbol.data.variable = malloc((strlen(rValue.data.variable) + 1) * sizeof(char));
+				strcpy(newSymbol.data.variable, rValue.data.variable);
 			}
 			else
-				newSymbol = rightOperand;
+				newSymbol = rValue;
 		}
 		else
 		{
 			remember = newSymbol.data.variable;
-			newSymbol.data.variable = (char *) malloc((strlen(remember) + 1) * sizeof(char));
+			newSymbol.data.variable = malloc((strlen(remember) + 1) * sizeof(char));
 			strcpy(newSymbol.data.variable, remember);
 		}
 
@@ -465,7 +467,7 @@ static int atomizeTree(tree expressionTree, expression **output)
 		resetToRoot(&expressionTree);
 	}
 	expressionCount = llLength(expressions);
-	*output = (expression *) malloc(sizeof(expression) * expressionCount);
+	*output = malloc(sizeof(expression) * expressionCount);
 	llToArray(expressions, *output);
 	freell(expressions);
 	return expressionCount;
@@ -482,18 +484,18 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 	for (; i < llLength(expressionList); i++)
 	{
 		current = *(expression *) llread(expressionList, i);
-		if (current.isTrivial && current.rightOperand.type == variable)
+		if (current.isTrivial && current.rValue.type == variable)
 		{
-			if (!contains(trivialExpressions, current.rightOperand.data.variable))
+			if (!contains(trivialExpressions, current.rValue.data.variable))
 			{
-				copy = (char *) malloc((strlen(current.assignTo.data.variable) + 1) * sizeof(char));
+				copy = malloc((strlen(current.assignTo.data.variable) + 1) * sizeof(char));
 				strcpy(copy, current.assignTo.data.variable);
-				writeHash(&trivialExpressions, current.rightOperand.data.variable, &copy);
+				writeHash(&trivialExpressions, current.rValue.data.variable, &copy);
 			}
 			else
 			{
-				copy = (char *) malloc((strlen(current.rightOperand.data.variable) + 1) * sizeof(char));
-				strcpy(copy, current.rightOperand.data.variable);
+				copy = malloc((strlen(current.rValue.data.variable) + 1) * sizeof(char));
+				strcpy(copy, current.rValue.data.variable);
 				writeHash(&toRemove, &i, &copy);
 			}
 		}
@@ -510,11 +512,11 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 	for (i = 0; i < llLength(expressionList); i++)
 	{
 		current = *(expression *) llread(expressionList, i);
-		if (current.rightOperand.type == variable && current.isTrivial)
+		if (current.rValue.type == variable && current.isTrivial)
 		{
-			if (contains(trivialExpressions, current.rightOperand.data.variable))
+			if (contains(trivialExpressions, current.rValue.data.variable))
 			{
-				copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
+				copy = *(char **) readHash(trivialExpressions, current.rValue.data.variable);
 				if (strcmp(copy, current.assignTo.data.variable) == 0)
 				{
 					llErase(&expressionList, i);
@@ -526,24 +528,24 @@ static void simplifyExpressionArray(expression expressions[], int *length)
 		if (contains(trivialExpressions, current.assignTo.data.variable))
 		{
 			copy = *(char **) readHash(trivialExpressions, current.assignTo.data.variable);
-			current.assignTo.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
+			current.assignTo.data.variable = malloc((strlen(copy) + 1) * sizeof(char));
 			strcpy(current.assignTo.data.variable, copy);
 			llErase(&expressionList, i);
 			llInsert(&expressionList, i, &current);
 		}
-		if (current.rightOperand.type == variable && contains(trivialExpressions, current.rightOperand.data.variable))
+		if (current.rValue.type == variable && contains(trivialExpressions, current.rValue.data.variable))
 		{
-			copy = *(char **) readHash(trivialExpressions, current.rightOperand.data.variable);
-			current.rightOperand.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
-			strcpy(current.rightOperand.data.variable, copy);
+			copy = *(char **) readHash(trivialExpressions, current.rValue.data.variable);
+			current.rValue.data.variable = malloc((strlen(copy) + 1) * sizeof(char));
+			strcpy(current.rValue.data.variable, copy);
 			llErase(&expressionList, i);
 			llInsert(&expressionList, i, &current);
 		}
-		if (current.leftOperand.type == variable && contains(trivialExpressions, current.leftOperand.data.variable))
+		if (current.lValue.type == variable && contains(trivialExpressions, current.lValue.data.variable))
 		{
-			copy = *(char **) readHash(trivialExpressions, current.leftOperand.data.variable);
-			current.leftOperand.data.variable = (char *) malloc((strlen(copy) + 1) * sizeof(char));
-			strcpy(current.leftOperand.data.variable, copy);
+			copy = *(char **) readHash(trivialExpressions, current.lValue.data.variable);
+			current.lValue.data.variable = malloc((strlen(copy) + 1) * sizeof(char));
+			strcpy(current.lValue.data.variable, copy);
 			llErase(&expressionList, i);
 			llInsert(&expressionList, i, &current);
 		}
@@ -558,32 +560,32 @@ static void expressionArrayToString(expression expressions[], int length, char *
 {
 	int i;
 	int outputOffset = 0;
-	symbol leftOperand;
-	symbol rightOperand;
+	symbol lValue;
+	symbol rValue;
 	symbol operator;
 	symbol assign;
 	for (i = 0; i < length; i++)
 	{
-		leftOperand = expressions[i].leftOperand;
-		rightOperand = expressions[i].rightOperand;
+		lValue = expressions[i].lValue;
+		rValue = expressions[i].rValue;
 		operator = expressions[i].operator;
 		assign = expressions[i].assignTo;
 		if (!expressions[i].isTrivial)
 		{
 			sprintf(output + outputOffset, "%s=%s%d%s%s%s%d%s;", assign.data.variable,
-					leftOperand.type == variable ? leftOperand.data.variable : "",
-					leftOperand.type == literal ? leftOperand.data.literal : 1,
-					leftOperand.type == literal ? "" : "\b",
-					operator.data.operand, rightOperand.type == variable ? rightOperand.data.variable : "",
-					rightOperand.type == literal ? rightOperand.data.literal : 1,
-					rightOperand.type == literal ? "" : "\b");
+					lValue.type == variable ? lValue.data.variable : "",
+					lValue.type == literal ? lValue.data.literal : 1,
+					lValue.type == literal ? "" : "\b",
+					operator.data.operator, rValue.type == variable ? rValue.data.variable : "",
+					rValue.type == literal ? rValue.data.literal : 1,
+					rValue.type == literal ? "" : "\b");
 		}
 		else
 		{
 			sprintf(output + outputOffset, "%s=%d%s%s;", assign.data.variable,
-					rightOperand.type == literal ? rightOperand.data.literal : 1,
-					rightOperand.type == literal ? "" : "\b",
-					rightOperand.type == variable ? rightOperand.data.variable : "");
+					rValue.type == literal ? rValue.data.literal : 1,
+					rValue.type == literal ? "" : "\b",
+					rValue.type == variable ? rValue.data.variable : "");
 		}
 		while (output[++outputOffset]);
 	}
@@ -596,10 +598,10 @@ static void freeExpressionArray(expression *expressions, int length)
 	for (; i < length; i++)
 	{
 		free(expressions[i].assignTo.data.variable);
-		if (expressions[i].leftOperand.type == variable && !expressions[i].isTrivial)
-			free(expressions[i].leftOperand.data.variable);
-		if (expressions[i].rightOperand.type == variable)
-			free(expressions[i].rightOperand.data.variable);
+		if (expressions[i].lValue.type == variable && !expressions[i].isTrivial)
+			free(expressions[i].lValue.data.variable);
+		if (expressions[i].rValue.type == variable)
+			free(expressions[i].rValue.data.variable);
 	}
 	free(expressions);
 }
@@ -615,7 +617,7 @@ int convertExpression(char *input, char *output, char *opTable[], int tableLengt
 	linkedList charList = arrayToll(input, sizeof(char), strlen(input) + 1);
 	linkedList symbolicList = charListToSymbolList(charList, opTable, tableLength);
 	int length = llLength(symbolicList);
-	symbol *symbols = (symbol *) malloc(llLength(symbolicList) * sizeof(symbol));
+	symbol *symbols = malloc(llLength(symbolicList) * sizeof(symbol));
 	tree expressionTree;
 	expression *expressions;
 	freell(charList);

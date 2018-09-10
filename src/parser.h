@@ -20,7 +20,7 @@ typedef struct symbol
 	{
 		int literal;
 		char *variable;
-		char operand[3];
+		char operator[3];
 	} data;
 } symbol;
 
@@ -28,9 +28,9 @@ typedef struct expression
 {
 	unsigned isTrivial : 1;
 	symbol assignTo;
-	symbol leftOperand;
+	symbol lValue;
 	symbol operator;
-	symbol rightOperand;
+	symbol rValue;
 } expression;
 
 static const char AUTO_VAR = 'k';
